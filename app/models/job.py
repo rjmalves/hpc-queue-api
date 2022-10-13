@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
+from typing import List
 
 from app.models.jobstatus import JobStatus
 from app.models.resourceusage import ResourceUsage
@@ -21,4 +22,5 @@ class Job(BaseModel):
     workingDirectory: str
     reservedSlots: int
     scriptFile: str
+    args: Optional[List[str]]
     resourceUsage: Optional[ResourceUsage]
