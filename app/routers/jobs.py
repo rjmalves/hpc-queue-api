@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 
-@router.get("/")
+@router.get("/", response_model=List[Job])
 async def read_jobs(
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ) -> List[Job]:
@@ -35,7 +35,7 @@ async def create_job(
     return submitted_job
 
 
-@router.get("/{jobId}")
+@router.get("/{jobId}", response_model=Job)
 async def read_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
@@ -46,7 +46,7 @@ async def read_job(
     return job
 
 
-@router.delete("/{jobId}")
+@router.delete("/{jobId}", response_model=Job)
 async def delete_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
