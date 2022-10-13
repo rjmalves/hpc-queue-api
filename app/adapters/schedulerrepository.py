@@ -58,6 +58,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
     @staticmethod
     async def list_jobs() -> Optional[List[Job]]:
         def __parse_list_jobs(content: str) -> List[Job]:
+            print(content)
             root = ET.fromstring(content)
             jobs: List[Job] = []
             for job_xml in root[0]:
