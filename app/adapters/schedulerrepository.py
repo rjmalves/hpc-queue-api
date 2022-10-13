@@ -111,7 +111,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                     scaled.find("UA_value").text
                 )
             jobId = element.find("JB_job_number").text
-            name = element.find("JB_name").text
+            name = element.find("JB_job_name").text
             reservedSlots = (
                 element.find("JB_pe_range").find("ranges").find("RN_min").text
             )
