@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import uvicorn
 import os
 import pathlib
 from fastapi import FastAPI
@@ -13,6 +14,11 @@ load_dotenv(
 )
 Settings.read_environments()
 
-app = FastAPI()
+app = FastAPI(root_path=Settings.root_path)
 
 app.include_router(jobs.router)
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app", host=Settings.host, port=Settings.port, log_level="info"
+    )
