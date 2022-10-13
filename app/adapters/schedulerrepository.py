@@ -103,6 +103,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 float(element.find("JB_submission_time").text)
             )
             argsList = element.find("JB_job_args")
+            argsContent = (
+                [a.find("element").find("ST_name").text for a in argsList]
+                if len(argsList) > 0
+                else []
+            )
             usageList = (
                 element.find("JB_ja_tasks")
                 .find("ulong_sublist")
@@ -141,7 +146,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 workingDirectory=str(workingDirectory),
                 reservedSlots=int(reservedSlots),
                 scriptFile=str(scriptFile),
-                args=[a.text for a in argsList],
+                args=argsContent,
                 resourceUsage=usage,
             )
 
