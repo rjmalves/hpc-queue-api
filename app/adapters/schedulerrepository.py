@@ -38,7 +38,12 @@ class AbstractSchedulerRepository(ABC):
 class SGESchedulerRepository(AbstractSchedulerRepository):
     """"""
 
-    STATUS_MAPPING: Dict[str, JobStatus] = {}
+    STATUS_MAPPING: Dict[str, JobStatus] = {
+        "qw": JobStatus.START_REQUESTED,
+        "t": JobStatus.STARTING,
+        "r": JobStatus.RUNNING,
+        "dr": JobStatus.STOPPING,
+    }
 
     # TODO - get example of qstat -t
 
@@ -105,27 +110,33 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 usageDict[scaled.find("UA_name").text] = float(
                     scaled.find("UA_value").text
                 )
+            jobId = element.find("JB_job_number").text
+            name = element.find("JB_name").text
+            reservedSlots = (
+                element.find("JB_pe_range").find("ranges").find("RN_min").text
+            )
+            workingDirectory = element.find("JB_cwd").text
+            scriptFile = element.find("JB_script_file").text
+            if not all(
+                [jobId, name, reservedSlots, workingDirectory, scriptFile]
+            ):
+                return None
             # TODO - normalize units
             usage = ResourceUsage(
-                cpu=usageDict["cpu"],
-                memory=usageDict["mem"],
-                io=usageDict["io"],
+                cpu=float(usageDict["cpu"]),
+                memory=float(usageDict["mem"]),
+                io=float(usageDict["io"]),
             )
             return Job(
-                jobId=element.find("JB_job_number").text,
+                jobId=str(jobId),
                 status=status,
-                name=element.find("JB_job_name").text,
+                name=str(name),
                 startTime=startTime,
                 lastStatusUpdateTime=datetime.now(),
                 clusterId=Settings.clusterId,
-                workingDirectory=element.find("JB_cwd").text,
-                reservedSlots=int(
-                    element.find("JB_pe_range")
-                    .find("ranges")
-                    .find("RN_min")
-                    .text
-                ),
-                scriptFile=element.find("JB_script_file").text,
+                workingDirectory=str(workingDirectory),
+                reservedSlots=int(reservedSlots),
+                scriptFile=str(scriptFile),
                 args=[a.text for a in argsList],
                 resourceUsage=usage,
             )
