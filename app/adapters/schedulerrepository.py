@@ -155,6 +155,8 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             return None
         else:
             detailedJob = __parse_get_job(ans)
+            if detailedJob is None:
+                return None
             allJobs = await SGESchedulerRepository.list_jobs()
             generalJobData = [
                 j for j in allJobs if j.jobId == detailedJob.jobId
