@@ -1,0 +1,24 @@
+from typing import Optional
+from datetime import datetime
+from pydantic import BaseModel
+
+from app.models.jobstatus import JobStatus
+from app.models.resourceusage import ResourceUsage
+
+
+class Job(BaseModel):
+    """
+    Class for defining a compute fleet that runs inside a cluster,
+    also known as a job in an HPC queue.
+    """
+
+    jobId: Optional[str]
+    status: Optional[JobStatus]
+    name: str
+    startTime: Optional[datetime]
+    lastStatusUpdateTime: Optional[datetime]
+    clusterId: str
+    workingDirectory: str
+    reservedSlots: int
+    scriptFile: str
+    resourceUsage: Optional[ResourceUsage]
