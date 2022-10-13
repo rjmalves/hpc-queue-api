@@ -126,6 +126,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 cpu=float(usageDict["cpu"]),
                 memory=float(usageDict["mem"]),
                 io=float(usageDict["io"]),
+                timeInstant=datetime.now(),
             )
             return Job(
                 jobId=str(jobId),
