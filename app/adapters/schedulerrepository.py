@@ -135,8 +135,8 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             usage = ResourceUsage(
                 cpuSeconds=float(usageDict["cpu"]),
                 memoryCpuSeconds=float(usageDict["mem"]),
-                instantTotalMemory=float(usageDict["vmem"]),
-                maxTotalMemory=float(usageDict["maxvmem"]),
+                instantTotalMemory=float(usageDict["vmem"]) / 1e9,
+                maxTotalMemory=float(usageDict["maxvmem"]) / 1e9,
                 processIO=float(usageDict["io"]),
                 processIOWaiting=float(usageDict["iow"]),
                 timeInstant=datetime.now(),
