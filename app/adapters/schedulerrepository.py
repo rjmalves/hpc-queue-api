@@ -60,8 +60,12 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         def __parse_list_jobs(content: str) -> List[Job]:
             print(content)
             root = ET.fromstring(content)
+            print("ROOT ----------")
+            print(root)
             jobs: List[Job] = []
             for job_xml in root[0]:
+                print("JOB --------")
+                print(job_xml)
                 status = SGESchedulerRepository.STATUS_MAPPING.get(
                     job_xml.find("state").text, JobStatus.UNKNOWN
                 )
