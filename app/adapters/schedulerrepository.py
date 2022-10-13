@@ -131,12 +131,12 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 [jobId, name, reservedSlots, workingDirectory, scriptFile]
             ):
                 return None
-            # TODO - normalize units
+            # converts total memory from B to GB
             usage = ResourceUsage(
                 cpuSeconds=float(usageDict["cpu"]),
                 memoryCpuSeconds=float(usageDict["mem"]),
-                instantTotalMemory=float(usageDict["vmem"]) / 1e9,
-                maxTotalMemory=float(usageDict["maxvmem"]) / 1e9,
+                instantTotalMemory=float(usageDict["vmem"]) / 1e8,
+                maxTotalMemory=float(usageDict["maxvmem"]) / 1e8,
                 processIO=float(usageDict["io"]),
                 processIOWaiting=float(usageDict["iow"]),
                 timeInstant=datetime.now(),
