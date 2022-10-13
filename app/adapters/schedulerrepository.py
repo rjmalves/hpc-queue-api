@@ -72,6 +72,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 startTime = datetime.fromisoformat(
                     job_xml.find("JAT_start_time").text
                 )
+                print([j for j in job_xml])
                 jobs.append(
                     Job(
                         jobId=job_xml.find("JB_job_number").text,
