@@ -104,7 +104,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             )
             argsList = element.find("JB_job_args")
             argsContent = (
-                [a.find("element").find("ST_name").text for a in argsList]
+                [a.find("ST_name").text for a in argsList]
                 if len(argsList) > 0
                 else []
             )
