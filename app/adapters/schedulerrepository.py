@@ -94,7 +94,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             if not element:
                 return None
             status = SGESchedulerRepository.STATUS_MAPPING.get(
-                element.find("state").text, JobStatus.UNKNOWN
+                "", JobStatus.UNKNOWN
             )
             startTime = datetime.fromtimestamp(
                 float(element.find("JB_submission_time").text)
