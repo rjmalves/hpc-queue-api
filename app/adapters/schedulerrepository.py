@@ -58,30 +58,29 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
     @staticmethod
     async def list_jobs() -> Optional[List[Job]]:
         def __parse_list_jobs(content: str) -> List[Job]:
-            print(content)
             root = ET.fromstring(content)
-            print("ROOT ----------")
-            print(root)
             jobs: List[Job] = []
             for job_xml in root[0]:
-                print("JOB --------")
-                print(job_xml)
                 status = SGESchedulerRepository.STATUS_MAPPING.get(
                     job_xml.find("state").text, JobStatus.UNKNOWN
                 )
                 startTime = datetime.fromisoformat(
                     job_xml.find("JAT_start_time").text
                 )
-                print([j for j in job_xml])
+                jobId = job_xml.find("JB_job_number").text
+                name = job_xml.find("JB_name").text
+                reservedSlots = int(job_xml.find("slots").text)
+                if not all([jobId, name, reservedSlots]):
+                    continue
                 jobs.append(
                     Job(
-                        jobId=job_xml.find("JB_job_number").text,
-                        name=job_xml.find("JB_name").text,
+                        jobId=jobId,
+                        name=name,
                         status=status,
                         startTime=startTime,
                         lastStatusUpdateTime=datetime.now(),
                         clusterId=Settings.clusterId,
-                        reservedSlots=int(job_xml.find("slots").text),
+                        reservedSlots=reservedSlots,
                     )
                 )
             return jobs

@@ -2,7 +2,7 @@ import os
 
 
 class Settings:
-    clusterId = os.getenv("CLUSTER_ID")
+    clusterId = os.getenv("CLUSTER_ID", "0")
     scheduler = os.getenv("SCHEDULER", "SGE")
 
     @classmethod
