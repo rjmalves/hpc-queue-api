@@ -85,7 +85,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
 
     @staticmethod
     async def get_job(jobId: str) -> Optional[Job]:
-        def __parse_get_job(content: str) -> List[Job]:
+        def __parse_get_job(content: str) -> Job:
             try:
                 root = ET.fromstring(content)
             except ET.ParseError:
@@ -149,7 +149,16 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         if cod != 0:
             return None
         else:
-            return __parse_get_job(ans)
+            detailedJob = __parse_get_job(ans)
+            allJobs = await SGESchedulerRepository.list_jobs()
+            generalJobData = [
+                j for j in allJobs if j.jobId == detailedJob.jobId
+            ]
+            if len(generalJobData) == 1:
+                detailedJob.status = generalJobData[0].status
+                return detailedJob
+            else:
+                return None
 
     @staticmethod
     async def submit_job(job: Job) -> Optional[Job]:
