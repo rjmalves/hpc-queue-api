@@ -38,19 +38,6 @@ class AbstractSchedulerRepository(ABC):
 class SGESchedulerRepository(AbstractSchedulerRepository):
     """"""
 
-    DUMMY_JOB = Job(
-        jobId="1",
-        name="test",
-        status=JobStatus.RUNNING,
-        startTime=datetime.now(),
-        lastStatusUpdateTime=datetime.now(),
-        clusterId="1",
-        workingDirectory="/home/pem/test",
-        reservedSlots=96,
-        scriptFile="/home/pem/newave",
-        resourceUsage=None,
-    )
-
     STATUS_MAPPING: Dict[str, JobStatus] = {}
 
     # TODO - get example of qstat -t

@@ -7,5 +7,5 @@ class Settings:
 
     @classmethod
     def read_environments(cls):
-        cls.clusterId = os.getenv("CLUSTER_ID")
-        cls.scheduler = os.getenv("SCHEDULER")
+        cls.clusterId = os.getenv("CLUSTER_ID", "0")
+        cls.scheduler = os.getenv("SCHEDULER", "SGE")
