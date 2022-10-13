@@ -7,7 +7,10 @@ class ResourceUsage(BaseModel):
     Class for storing the computation resource usage of a job / process.
     """
 
-    cpu: float
-    memory: float
-    io: float
+    cpuSeconds: float
+    memoryCpuSeconds: float
+    instantTotalMemory: float
+    maxTotalMemory: float
+    processIO: float
+    processIOWaiting: float
     timeInstant: datetime

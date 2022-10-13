@@ -39,9 +39,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
     """"""
 
     STATUS_MAPPING: Dict[str, JobStatus] = {
+        "q": JobStatus.START_REQUESTED,
         "qw": JobStatus.START_REQUESTED,
         "t": JobStatus.STARTING,
         "r": JobStatus.RUNNING,
+        "d": JobStatus.STOP_REQUESTED,
         "dr": JobStatus.STOPPING,
     }
 
@@ -131,9 +133,12 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 return None
             # TODO - normalize units
             usage = ResourceUsage(
-                cpu=float(usageDict["cpu"]),
-                memory=float(usageDict["mem"]),
-                io=float(usageDict["io"]),
+                cpuSeconds=float(usageDict["cpu"]),
+                memoryCpuSeconds=float(usageDict["mem"]),
+                instantTotalMemory=float(usageDict["vmem"]),
+                maxTotalMemory=float(usageDict["maxvmem"]),
+                processIO=float(usageDict["io"]),
+                processIOWaiting=float(usageDict["iow"]),
                 timeInstant=datetime.now(),
             )
             return Job(
