@@ -116,10 +116,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 .find("JAT_scaled_usage_list")
             )
             usageDict = {}
-            for scaled in usageList:
-                usageDict[scaled.find("UA_name").text] = float(
-                    scaled.find("UA_value").text
-                )
+            if usageList:
+                for scaled in usageList:
+                    usageDict[scaled.find("UA_name").text] = float(
+                        scaled.find("UA_value").text
+                    )
             jobId = element.find("JB_job_number").text
             name = element.find("JB_job_name").text
             reservedSlots = (
@@ -132,14 +133,18 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             ):
                 return None
             # converts total memory from B to GB
-            usage = ResourceUsage(
-                cpuSeconds=float(usageDict["cpu"]),
-                memoryCpuSeconds=float(usageDict["mem"]),
-                instantTotalMemory=float(usageDict["vmem"]) / 1e8,
-                maxTotalMemory=float(usageDict["maxvmem"]) / 1e8,
-                processIO=float(usageDict["io"]),
-                processIOWaiting=float(usageDict["iow"]),
-                timeInstant=datetime.now(),
+            usage = (
+                ResourceUsage(
+                    cpuSeconds=float(usageDict["cpu"]),
+                    memoryCpuSeconds=float(usageDict["mem"]),
+                    instantTotalMemory=float(usageDict["vmem"]) / 1e8,
+                    maxTotalMemory=float(usageDict["maxvmem"]) / 1e8,
+                    processIO=float(usageDict["io"]),
+                    processIOWaiting=float(usageDict["iow"]),
+                    timeInstant=datetime.now(),
+                )
+                if usageDict
+                else None
             )
             return Job(
                 jobId=str(jobId),
