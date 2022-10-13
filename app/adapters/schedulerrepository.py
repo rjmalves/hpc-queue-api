@@ -69,18 +69,18 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 )
                 jobId = job_xml.find("JB_job_number").text
                 name = job_xml.find("JB_name").text
-                reservedSlots = int(job_xml.find("slots").text)
+                reservedSlots = job_xml.find("slots").text
                 if not all([jobId, name, reservedSlots]):
                     continue
                 jobs.append(
                     Job(
-                        jobId=jobId,
-                        name=name,
+                        jobId=str(jobId),
+                        name=str(name),
                         status=status,
                         startTime=startTime,
                         lastStatusUpdateTime=datetime.now(),
                         clusterId=Settings.clusterId,
-                        reservedSlots=reservedSlots,
+                        reservedSlots=int(reservedSlots),
                     )
                 )
             return jobs

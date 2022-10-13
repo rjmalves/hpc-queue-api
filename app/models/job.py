@@ -19,8 +19,8 @@ class Job(BaseModel):
     startTime: Optional[datetime]
     lastStatusUpdateTime: Optional[datetime]
     clusterId: str
-    workingDirectory: str
+    workingDirectory: Optional[str]
     reservedSlots: int
-    scriptFile: str
+    scriptFile: Optional[str]
     args: Optional[List[str]]
     resourceUsage: Optional[ResourceUsage]
