@@ -86,7 +86,10 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
     @staticmethod
     async def get_job(jobId: str) -> Optional[Job]:
         def __parse_get_job(content: str) -> List[Job]:
-            root = ET.fromstring(content)
+            try:
+                root = ET.fromstring(content)
+            except ET.ParseError:
+                return None
             jobinfo = root.find("djob_info")
             if not jobinfo:
                 return None
