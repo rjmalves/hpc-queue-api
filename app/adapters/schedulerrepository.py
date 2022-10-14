@@ -189,7 +189,6 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             job.jobId = content.split("Your job")[1].split("(")[0].strip()
             job.name = content.split("(")[1].split(")")[0].strip('"')
 
-        # TODO - validate required fields
         if not job.name:
             job.name = Path(job.workingDirectory).parts[-1]
         command = [

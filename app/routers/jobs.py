@@ -29,9 +29,15 @@ async def create_job(
     job: Job,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ) -> Job:
+    if not job.workingDirectory:
+        raise HTTPException(
+            status_code=400, detail="workingDirectory is mandatory"
+        )
+    if not job.scriptFile:
+        raise HTTPException(status_code=400, detail="scriptFile is mandatory")
     submitted_job = await scheduler.submit_job(job)
     if submitted_job is None:
-        raise HTTPException(status_code=500, detail="error submitting job")
+        raise HTTPException(status_code=500, detail="error submitting job.")
     return submitted_job
 
 
