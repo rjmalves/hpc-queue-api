@@ -181,6 +181,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             detailedJob = __parse_get_job(ans)
             if isinstance(detailedJob, ErrorResponse):
                 return detailedJob
+            return detailedJob
             allJobs = await SGESchedulerRepository.list_jobs()
             if isinstance(allJobs, ErrorResponse):
                 return allJobs
