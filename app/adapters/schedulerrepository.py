@@ -191,7 +191,9 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 detailedJob.status = generalJobData[0].status
                 return detailedJob
             else:
-                return ErrorResponse(500, "error parsing qstat -j result")
+                return ErrorResponse(
+                    500, f"error parsing qstat -j result: {generalJobData}"
+                )
 
     @staticmethod
     async def submit_job(job: Job) -> Union[Job, ErrorResponse]:
