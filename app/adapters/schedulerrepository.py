@@ -110,11 +110,15 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 if len(argsList) > 0
                 else []
             )
-            taskList = (
-                element.find("JB_ja_tasks")
-                .find("ulong_sublist")
-                .find("JAT_task_list")
-            )
+            jobTasks = element.find("JB_ja_tasks")
+            if not jobTasks:
+                return None
+            taskSublist = jobTasks.find("ulong_sublist")
+            if not taskSublist:
+                return None
+            taskList = taskSublist.find("JAT_task_list")
+            if not taskList:
+                return None
 
             usages = []
             if taskList:
