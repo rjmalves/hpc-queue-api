@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from app.internal.settings import Settings
-from app.internal.fs import set_directory
 from app.models.program import Program
 
 
