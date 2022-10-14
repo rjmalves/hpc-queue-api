@@ -1,7 +1,6 @@
-from typing import Optional
 from datetime import datetime
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 from app.models.jobstatus import JobStatus
 from app.models.resourceusage import ResourceUsage

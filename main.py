@@ -3,7 +3,7 @@ import uvicorn
 import os
 import pathlib
 from fastapi import FastAPI
-from app.routers import jobs
+from app.routers import jobs, programs
 from app.internal.settings import Settings
 
 BASEDIR = pathlib.Path().resolve()
@@ -17,6 +17,7 @@ Settings.read_environments()
 app = FastAPI(root_path=Settings.root_path)
 
 app.include_router(jobs.router)
+app.include_router(programs.router)
 
 if __name__ == "__main__":
     uvicorn.run(
