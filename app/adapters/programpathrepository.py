@@ -65,7 +65,7 @@ class PEMAWSProgramPathRepository(ABC):
                     installationDirectory=str(versionPath),
                     isManaged=True,
                     args=args,
-                    executablePath=execFiles[0],
+                    executablePath=versionPath.joinpath(execFiles[0]),
                 )
             )
         return programs
