@@ -110,17 +110,23 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 if len(argsList) > 0
                 else []
             )
-            usageList = (
+            taskList = (
                 element.find("JB_ja_tasks")
                 .find("ulong_sublist")
-                .find("JAT_scaled_usage_list")
+                .find("JAT_task_list")
             )
-            usageDict = {}
-            if usageList:
-                for scaled in usageList:
-                    usageDict[scaled.find("UA_name").text] = float(
-                        scaled.find("UA_value").text
-                    )
+
+            usages = []
+            if taskList:
+                for taskElement in taskList:
+                    usageDict = {}
+                    usageElement = taskElement.find("PET_scaled_usage")
+                    for elem in usageElement:
+                        usageDict[elem.find("UA_name").text] = float(
+                            elem.find("UA_value").text
+                        )
+                    usages.append(usageDict)
+
             jobId = element.find("JB_job_number").text
             name = element.find("JB_job_name").text
             reservedSlots = (
@@ -135,12 +141,12 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             # converts total memory from B to GB
             usage = (
                 ResourceUsage(
-                    cpuSeconds=float(usageDict["cpu"]),
-                    memoryCpuSeconds=float(usageDict["mem"]),
-                    instantTotalMemory=float(usageDict["vmem"]) / 1e8,
-                    maxTotalMemory=float(usageDict["maxvmem"]) / 1e8,
-                    processIO=float(usageDict["io"]),
-                    processIOWaiting=float(usageDict["iow"]),
+                    cpuSeconds=sum([u["cpu"] for u in usages]),
+                    memoryCpuSeconds=sum([u["mem"] for u in usages]),
+                    instantTotalMemory=sum([u["vmem"] for u in usages]) / 1e9,
+                    maxTotalMemory=sum([u["maxvmem"] for u in usages]) / 1e9,
+                    processIO=sum([u["io"] for u in usages]),
+                    processIOWaiting=sum([u["iow"] for u in usages]),
                     timeInstant=datetime.now(),
                 )
                 if usageDict
