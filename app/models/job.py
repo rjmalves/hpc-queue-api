@@ -14,7 +14,7 @@ class Job(BaseModel):
 
     jobId: Optional[str]
     status: Optional[JobStatus]
-    name: str
+    name: Optional[str]
     startTime: Optional[datetime]
     lastStatusUpdateTime: Optional[datetime]
     clusterId: str

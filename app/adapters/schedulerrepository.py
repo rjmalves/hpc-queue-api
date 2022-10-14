@@ -199,7 +199,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             job.name,
             "-pe",
             "orte",
-            job.reservedSlots,
+            str(job.reservedSlots),
             job.scriptFile,
             *(job.args),
         ]
