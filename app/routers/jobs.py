@@ -12,46 +12,56 @@ router = APIRouter(
     tags=["jobs"],
 )
 
+responses = {
+    201: {"detail": ""},
+    202: {"detail": ""},
+    404: {"detail": ""},
+    500: {"detail": ""},
+    503: {"detail": ""},
+}
 
-@router.get("/", response_model=List[Job])
+
+@router.get("/", response_model=List[Job], responses=responses)
 async def read_jobs(
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
-) -> List[Job]:
+):
     ans = await scheduler.list_jobs()
     if isinstance(ans, HTTPResponse):
-        raise HTTPException(status_code=ans.code, detail=ans.message)
+        raise HTTPException(status_code=ans.code, detail=ans.detail)
     return ans
 
 
-@router.post("/")
+@router.post("/", responses=responses)
 async def create_job(
     job: Job,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
-) -> Job:
+):
 
     ans = await scheduler.submit_job(job)
     if isinstance(ans, HTTPResponse):
-        raise HTTPException(status_code=ans.code, detail=ans.message)
-    return JSONResponse(status_code=201, content=ans)
+        raise HTTPException(status_code=ans.code, detail=ans.detail)
+    return JSONResponse(
+        status_code=201, content={"detail": f"jobId: {ans.jobId}"}
+    )
 
 
-@router.get("/{jobId}", response_model=Job)
+@router.get("/{jobId}", response_model=Job, responses=responses)
 async def read_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
-) -> Job:
+):
     ans = await scheduler.get_job(jobId)
     if isinstance(ans, HTTPResponse):
-        raise HTTPException(status_code=ans.code, detail=ans.message)
+        raise HTTPException(status_code=ans.code, detail=ans.detail)
     return ans
 
 
-@router.delete("/{jobId}", response_model=Job)
+@router.delete("/{jobId}", responses=responses)
 async def delete_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ):
     ans = await scheduler.stop_job(jobId)
     if isinstance(ans, HTTPResponse):
-        raise HTTPException(status_code=ans.code, detail=ans.message)
-    return JSONResponse(status_code=202, content=ans)
+        raise HTTPException(status_code=ans.code, detail=ans.detail)
+    return JSONResponse(status_code=202, content={"detail": f"jobId: {jobId}"})

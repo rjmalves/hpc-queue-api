@@ -190,7 +190,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 return HTTPResponse(500, "error parsing qstat -j result")
 
     @staticmethod
-    async def submit_job(job: Job) -> HTTPResponse:
+    async def submit_job(job: Job) -> Union[Job, HTTPResponse]:
         def __parse_submit_ans(content: str):
             job.jobId = content.split("Your job")[1].split("(")[0].strip()
             job.name = content.split("(")[1].split(")")[0].strip('"')
@@ -219,7 +219,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             return HTTPResponse(500, f"error running qsub command: {ans}")
         else:
             __parse_submit_ans(ans)
-            return ans
+            return job
 
     @staticmethod
     async def stop_job(jobId: str) -> Union[Job, HTTPResponse]:
