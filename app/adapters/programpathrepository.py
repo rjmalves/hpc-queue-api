@@ -38,15 +38,15 @@ class PEMAWSProgramPathRepository(ABC):
     async def __list_program(
         cls,
         idPrefix: str,
-        versionPath: Path,
+        programPath: Path,
         name: str,
         args: List[str],
         execPattern: str,
     ) -> List[Program]:
         programs: List[Program] = []
-        versions = os.listdir(versionPath)
+        versions = os.listdir(programPath)
         for i, v in enumerate(versions):
-            versionPath = versionPath.joinpath(v)
+            versionPath = programPath.joinpath(v)
             execFiles = [
                 f for f in os.listdir(versionPath) if execPattern in f
             ]
