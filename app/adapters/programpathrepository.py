@@ -80,7 +80,7 @@ class PEMAWSProgramPathRepository(ABC):
 
     @classmethod
     async def list_programs(cls) -> List[Program]:
-        return cls.__list_newave() + cls.__list_decomp()
+        return await cls.__list_newave() + await cls.__list_decomp()
 
 
 SUPPORTED_PATHS: Dict[str, AbstractProgramPathRepository] = {
