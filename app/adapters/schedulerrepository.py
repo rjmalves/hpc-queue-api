@@ -118,6 +118,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                     taskList = taskSublist.find("JAT_task_list")
 
             usages = []
+            usageDict
             if taskList:
                 for taskElement in taskList:
                     usageDict = {}
@@ -150,7 +151,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                     processIOWaiting=sum([u["iow"] for u in usages]),
                     timeInstant=datetime.now(),
                 )
-                if usageDict
+                if taskList
                 else None
             )
             return Job(
