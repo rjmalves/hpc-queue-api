@@ -118,7 +118,6 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                     taskList = taskSublist.find("JAT_task_list")
 
             usages = []
-            usageDict
             if taskList:
                 for taskElement in taskList:
                     usageDict = {}
