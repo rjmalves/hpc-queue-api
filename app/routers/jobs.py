@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import JSONResponse
 from typing import List
-from app.internal.errorresponse import ErrorResponse
-from app.internal.settings import Settings
+from app.internal.httpresponse import HTTPResponse
 from app.models.job import Job
 
 from app.adapters.schedulerrepository import AbstractSchedulerRepository
@@ -18,7 +18,7 @@ async def read_jobs(
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ) -> List[Job]:
     ans = await scheduler.list_jobs()
-    if isinstance(ans, ErrorResponse):
+    if isinstance(ans, HTTPResponse):
         raise HTTPException(status_code=ans.code, detail=ans.message)
     return ans
 
@@ -30,9 +30,9 @@ async def create_job(
 ) -> Job:
 
     ans = await scheduler.submit_job(job)
-    if isinstance(ans, ErrorResponse):
+    if isinstance(ans, HTTPResponse):
         raise HTTPException(status_code=ans.code, detail=ans.message)
-    return ans
+    return JSONResponse(status_code=201, content=ans)
 
 
 @router.get("/{jobId}", response_model=Job)
@@ -41,7 +41,7 @@ async def read_job(
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ) -> Job:
     ans = await scheduler.get_job(jobId)
-    if isinstance(ans, ErrorResponse):
+    if isinstance(ans, HTTPResponse):
         raise HTTPException(status_code=ans.code, detail=ans.message)
     return ans
 
@@ -52,6 +52,6 @@ async def delete_job(
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ):
     ans = await scheduler.stop_job(jobId)
-    if isinstance(ans, ErrorResponse):
+    if isinstance(ans, HTTPResponse):
         raise HTTPException(status_code=ans.code, detail=ans.message)
-    return ans
+    return JSONResponse(status_code=202, content=ans)
