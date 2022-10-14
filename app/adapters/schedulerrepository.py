@@ -209,7 +209,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             return None
         else:
             __parse_submit_ans(ans)
-            return SGESchedulerRepository.get_job(job.jobId)
+            return await SGESchedulerRepository.get_job(job.jobId)
 
     @staticmethod
     async def stop_job(jobId: str) -> Job:
@@ -219,7 +219,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         if cod != 0:
             return None
         else:
-            return SGESchedulerRepository.get_job(jobId)
+            return await SGESchedulerRepository.get_job(jobId)
 
 
 SUPPORTED_SCHEDULERS: Dict[str, AbstractSchedulerRepository] = {
