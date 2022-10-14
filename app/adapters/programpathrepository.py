@@ -68,19 +68,21 @@ class PEMAWSProgramPathRepository(ABC):
 
     @classmethod
     async def __list_newave(cls) -> List[Program]:
-        return PEMAWSProgramPathRepository.__list_program(
+        return await PEMAWSProgramPathRepository.__list_program(
             "NW", cls.NEWAVE_PATH, "NEWAVE", ["N_PROC"], "mpi_newave"
         )
 
     @classmethod
     async def __list_decomp(cls) -> List[Program]:
-        return PEMAWSProgramPathRepository.__list_program(
+        return await PEMAWSProgramPathRepository.__list_program(
             "DC", cls.DECOMP_PATH, "DECOMP", ["N_PROC"], "mpi_decomp"
         )
 
     @classmethod
     async def list_programs(cls) -> List[Program]:
-        return await cls.__list_newave() + await cls.__list_decomp()
+        newave = await cls.__list_newave()
+        decomp = await cls.__list_decomp()
+        return newave + decomp
 
 
 SUPPORTED_PATHS: Dict[str, AbstractProgramPathRepository] = {
