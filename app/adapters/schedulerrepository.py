@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from app.internal.settings import Settings
 from app.internal.fs import set_directory
+from app.internal.errorresponse import ErrorResponse
 from app.models.job import Job, JobStatus
 from app.models.resourceusage import ResourceUsage
 from app.internal.terminal import run_terminal_retry
@@ -16,22 +17,22 @@ class AbstractSchedulerRepository(ABC):
 
     @staticmethod
     @abstractmethod
-    async def list_jobs() -> List[Job]:
+    async def list_jobs() -> Union[List[Job], ErrorResponse]:
         pass
 
     @staticmethod
     @abstractmethod
-    async def get_job(jobId: str) -> Job:
+    async def get_job(jobId: str) -> Union[Job, ErrorResponse]:
         pass
 
     @staticmethod
     @abstractmethod
-    async def submit_job(job: Job) -> Job:
+    async def submit_job(job: Job) -> Union[Job, ErrorResponse]:
         pass
 
     @staticmethod
     @abstractmethod
-    async def stop_job(jobId: str) -> Job:
+    async def stop_job(jobId: str) -> Union[Job, ErrorResponse]:
         pass
 
 
@@ -50,7 +51,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
     # TODO - get example of qstat -t
 
     @staticmethod
-    async def list_jobs() -> Optional[List[Job]]:
+    async def list_jobs() -> Union[List[Job], ErrorResponse]:
         def __parse_list_jobs(content: str) -> List[Job]:
             root = ET.fromstring(content)
             jobs: List[Job] = []
@@ -81,23 +82,27 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
 
         cod, ans = await run_terminal_retry(["qstat -xml"])
         if cod != 0:
-            return None
+            return ErrorResponse(500, f"error running qstat: {ans}")
         else:
             return __parse_list_jobs(ans)
 
     @staticmethod
-    async def get_job(jobId: str) -> Optional[Job]:
-        def __parse_get_job(content: str) -> Job:
+    async def get_job(jobId: str) -> Union[Job, ErrorResponse]:
+        def __parse_get_job(content: str) -> Union[Job, ErrorResponse]:
             try:
                 root = ET.fromstring(content)
             except ET.ParseError:
-                return None
+                return ErrorResponse(500, "error parsing qstat response")
             jobinfo = root.find("djob_info")
             if not jobinfo:
-                return None
+                return ErrorResponse(
+                    503, "detailed job info not yet available"
+                )
             element = jobinfo.find("element")
             if not element:
-                return None
+                return ErrorResponse(
+                    503, "detailed job info not yet available"
+                )
             status = SGESchedulerRepository.STATUS_MAPPING.get(
                 "", JobStatus.UNKNOWN
             )
@@ -138,7 +143,9 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             if not all(
                 [jobId, name, reservedSlots, workingDirectory, scriptFile]
             ):
-                return None
+                return ErrorResponse(
+                    503, "detailed job info not yet available"
+                )
             # converts total memory from B to GB
             usage = (
                 ResourceUsage(
@@ -169,12 +176,14 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
 
         cod, ans = await run_terminal_retry([f"qstat -j {jobId} -xml"])
         if cod != 0:
-            return None
+            return ErrorResponse(500, f"error running qstat command: {ans}")
         else:
             detailedJob = __parse_get_job(ans)
-            if detailedJob is None:
-                return None
+            if isinstance(detailedJob, ErrorResponse):
+                return detailedJob
             allJobs = await SGESchedulerRepository.list_jobs()
+            if isinstance(allJobs, ErrorResponse):
+                return allJobs
             generalJobData = [
                 j for j in allJobs if j.jobId == detailedJob.jobId
             ]
@@ -182,16 +191,20 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 detailedJob.status = generalJobData[0].status
                 return detailedJob
             else:
-                return None
+                return ErrorResponse(500, "error parsing qstat -j result")
 
     @staticmethod
-    async def submit_job(job: Job) -> Optional[Job]:
+    async def submit_job(job: Job) -> Union[Job, ErrorResponse]:
         def __parse_submit_ans(content: str):
             job.jobId = content.split("Your job")[1].split("(")[0].strip()
             job.name = content.split("(")[1].split(")")[0].strip('"')
 
         if not job.name:
             job.name = Path(job.workingDirectory).parts[-1]
+        if not job.workingDirectory:
+            return ErrorResponse(400, "workingDirectory is mandatory")
+        if not job.scriptFile:
+            return ErrorResponse(400, "scriptFile is mandatory")
         command = [
             "qsub",
             "-cwd",
@@ -207,18 +220,18 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         with set_directory(job.workingDirectory):
             cod, ans = await run_terminal_retry(command)
         if cod != 0:
-            return None
+            return ErrorResponse(500, f"error running qsub command: {ans}")
         else:
             __parse_submit_ans(ans)
             return await SGESchedulerRepository.get_job(job.jobId)
 
     @staticmethod
-    async def stop_job(jobId: str) -> Job:
+    async def stop_job(jobId: str) -> Union[Job, ErrorResponse]:
         # TODO - validate required fields
         command = ["qdel", jobId]
-        cod, _ = await run_terminal_retry(command)
+        cod, ans = await run_terminal_retry(command)
         if cod != 0:
-            return None
+            return ErrorResponse(500, f"error running qdel command: {ans}")
         else:
             return await SGESchedulerRepository.get_job(jobId)
 

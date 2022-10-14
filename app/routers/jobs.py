@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
+from app.internal.errorresponse import ErrorResponse
 from app.internal.settings import Settings
 from app.models.job import Job
 
@@ -16,12 +17,10 @@ router = APIRouter(
 async def read_jobs(
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ) -> List[Job]:
-    jobs = await scheduler.list_jobs()
-    if jobs is None:
-        raise HTTPException(
-            status_code=500, detail="error listing existing jobs"
-        )
-    return jobs
+    ans = await scheduler.list_jobs()
+    if isinstance(ans, ErrorResponse):
+        raise HTTPException(status_code=ans.code, detail=ans.message)
+    return ans
 
 
 @router.post("/")
@@ -29,16 +28,11 @@ async def create_job(
     job: Job,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ) -> Job:
-    if not job.workingDirectory:
-        raise HTTPException(
-            status_code=400, detail="workingDirectory is mandatory"
-        )
-    if not job.scriptFile:
-        raise HTTPException(status_code=400, detail="scriptFile is mandatory")
-    submitted_job = await scheduler.submit_job(job)
-    if submitted_job is None:
-        raise HTTPException(status_code=500, detail="error submitting job.")
-    return submitted_job
+
+    ans = await scheduler.submit_job(job)
+    if isinstance(ans, ErrorResponse):
+        raise HTTPException(status_code=ans.code, detail=ans.message)
+    return ans
 
 
 @router.get("/{jobId}", response_model=Job)
@@ -46,10 +40,10 @@ async def read_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ) -> Job:
-    job = await scheduler.get_job(jobId)
-    if job is None:
-        raise HTTPException(status_code=404, detail="job not found")
-    return job
+    ans = await scheduler.get_job(jobId)
+    if isinstance(ans, ErrorResponse):
+        raise HTTPException(status_code=ans.code, detail=ans.message)
+    return ans
 
 
 @router.delete("/{jobId}", response_model=Job)
@@ -57,7 +51,7 @@ async def delete_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ):
-    job = await scheduler.stop_job(jobId)
-    if job is None:
-        raise HTTPException(status_code=404, detail="job not found")
-    return job
+    ans = await scheduler.stop_job(jobId)
+    if isinstance(ans, ErrorResponse):
+        raise HTTPException(status_code=ans.code, detail=ans.message)
+    return ans
