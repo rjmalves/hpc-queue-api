@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 import os
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union
 
+from app.internal.httpresponse import HTTPResponse
 from app.internal.settings import Settings
 from app.models.program import Program
 
@@ -40,8 +41,13 @@ class PEMAWSProgramPathRepository(ABC):
         name: str,
         args: List[str],
         execPattern: str,
-    ) -> List[Program]:
+    ) -> Union[List[Program], HTTPResponse]:
         programs: List[Program] = []
+        if not os.path.isdir(programPath):
+            return HTTPResponse(
+                500,
+                f"program path not found: {cls.ROOT_PROGRAM_PATH}",
+            )
         versions = os.listdir(programPath)
         for i, v in enumerate(versions):
             versionPath = programPath.joinpath(v)
@@ -65,21 +71,25 @@ class PEMAWSProgramPathRepository(ABC):
         return programs
 
     @classmethod
-    async def __list_newave(cls) -> List[Program]:
+    async def __list_newave(cls) -> Union[List[Program], HTTPResponse]:
         return await PEMAWSProgramPathRepository.__list_program(
             "NW", cls.NEWAVE_PATH, "NEWAVE", ["N_PROC"], "mpi_newave"
         )
 
     @classmethod
-    async def __list_decomp(cls) -> List[Program]:
+    async def __list_decomp(cls) -> Union[List[Program], HTTPResponse]:
         return await PEMAWSProgramPathRepository.__list_program(
             "DC", cls.DECOMP_PATH, "DECOMP", ["N_PROC"], "mpi_decomp"
         )
 
     @classmethod
-    async def list_programs(cls) -> List[Program]:
+    async def list_programs(cls) -> Union[List[Program], HTTPResponse]:
         newave = await cls.__list_newave()
+        if isinstance(newave, HTTPResponse):
+            return newave
         decomp = await cls.__list_decomp()
+        if isinstance(decomp, HTTPResponse):
+            return decomp
         return newave + decomp
 
 

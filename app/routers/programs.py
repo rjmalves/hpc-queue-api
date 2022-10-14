@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
+from app.internal.httpresponse import HTTPResponse
 from app.models.program import Program
 
 from app.adapters.programpathrepository import AbstractProgramPathRepository
@@ -10,6 +11,11 @@ router = APIRouter(
     tags=["programs"],
 )
 
+responses = {
+    404: {"detail": ""},
+    500: {"detail": ""},
+}
+
 
 @router.get("/", response_model=List[Program])
 async def read_programs(
@@ -18,10 +24,8 @@ async def read_programs(
     programPath: AbstractProgramPathRepository = Depends(programPath),
 ) -> List[Program]:
     programs = await programPath.list_programs()
-    if programs is None:
-        raise HTTPException(
-            status_code=500, detail="error listing existing programs"
-        )
+    if isinstance(programs, HTTPResponse):
+        raise HTTPException(status_code=programs.code, detail=programs.detail)
     if name:
         programs = [p for p in programs if p.name == name]
     if version:
