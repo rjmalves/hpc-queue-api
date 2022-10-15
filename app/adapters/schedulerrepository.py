@@ -112,13 +112,22 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 else []
             )
             taskList = None
+            masterUsageList = None
             jobTasks = element.find("JB_ja_tasks")
             if jobTasks:
                 taskSublist = jobTasks.find("ulong_sublist")
                 if taskSublist:
+                    masterUsageList = taskSublist.find("JAT_scaled_usage_list")
                     taskList = taskSublist.find("JAT_task_list")
 
             usages = []
+            if masterUsageList:
+                usageDict = {}
+                for scaled in masterUsageList:
+                    usageDict[scaled.find("UA_name").text] = float(
+                        scaled.find("UA_value").text
+                    )
+                usages.append(usageDict)
             if taskList:
                 for taskElement in taskList:
                     usageDict = {}
@@ -141,17 +150,20 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             ):
                 return HTTPResponse(503, "detailed job info not yet available")
             # converts total memory from B to GB
+            B_TO_GB = 1073741824
             usage = (
                 ResourceUsage(
                     cpuSeconds=sum([u["cpu"] for u in usages]),
                     memoryCpuSeconds=sum([u["mem"] for u in usages]),
-                    instantTotalMemory=sum([u["vmem"] for u in usages]) / 1e9,
-                    maxTotalMemory=sum([u["maxvmem"] for u in usages]) / 1e9,
+                    instantTotalMemory=sum([u["vmem"] for u in usages])
+                    / B_TO_GB,
+                    maxTotalMemory=sum([u["maxvmem"] for u in usages])
+                    / B_TO_GB,
                     processIO=sum([u["io"] for u in usages]),
                     processIOWaiting=sum([u["iow"] for u in usages]),
                     timeInstant=datetime.now(),
                 )
-                if taskList
+                if any([taskList, masterUsageList])
                 else None
             )
             return Job(
