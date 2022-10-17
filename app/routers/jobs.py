@@ -50,14 +50,27 @@ async def read_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ):
-    ans = await scheduler.get_job(jobId)
-    if isinstance(ans, HTTPResponse):
-        # ans_finished = await scheduler.get_finished_job(jobId)
-        # if not isinstance(ans_finished, HTTPResponse):
-        #     return ans_finished
-        raise HTTPException(status_code=ans.code, detail=ans.detail)
-    print(ans, type(ans))
-    return ans
+    allJobs = await scheduler.list_jobs()
+    if isinstance(allJobs, HTTPResponse):
+        raise HTTPException(status_code=allJobs.code, detail=allJobs.detail)
+    generalJobData = [j for j in allJobs if j.jobId == jobId]
+    if len(generalJobData) == 1:
+        detailedJob = await scheduler.get_job(jobId)
+        if isinstance(detailedJob, HTTPResponse):
+            raise HTTPException(
+                status_code=detailedJob.code, detail=detailedJob.detail
+            )
+        else:
+            detailedJob.status = generalJobData[0].status
+            return detailedJob
+    elif len(generalJobData) == 0:
+        detailedJob = await scheduler.get_finished_job(jobId)
+        if isinstance(detailedJob, HTTPResponse):
+            raise HTTPException(
+                status_code=detailedJob.code, detail=detailedJob.detail
+            )
+        else:
+            return detailedJob
 
 
 @router.delete("/{jobId}", responses=responses)

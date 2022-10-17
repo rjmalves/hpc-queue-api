@@ -192,17 +192,6 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             detailedJob = __parse_get_job(ans)
             if isinstance(detailedJob, HTTPResponse):
                 return detailedJob
-            allJobs = await SGESchedulerRepository.list_jobs()
-            if isinstance(allJobs, HTTPResponse):
-                return allJobs
-            generalJobData = [
-                j for j in allJobs if j.jobId == detailedJob.jobId
-            ]
-            if len(generalJobData) == 0:
-                return detailedJob
-            elif len(generalJobData) == 1:
-                detailedJob.status = generalJobData[0].status
-                return detailedJob
             else:
                 return HTTPResponse(500, "error parsing qstat -j result")
 
@@ -277,7 +266,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
 
         cod, ans = await run_terminal_retry([f"qacct -j {jobId}"])
         if cod != 0:
-            return HTTPResponse(500, f"error running qacct command: {ans}")
+            return HTTPResponse(404, f"job {jobId} not found")
         else:
             detailedJob = __parse_get_job(ans)
             return detailedJob
