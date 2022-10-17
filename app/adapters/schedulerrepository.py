@@ -242,8 +242,8 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 elif maxVmemStr in line:
                     maxvmem += float(line[13:].strip().split("G")[0])
 
-            if not all([name, startTime, endTime, slots]):
-                return HTTPResponse(500, "error parsing qacct -j response")
+            # if not all([name, startTime, endTime, slots]):
+            #     return HTTPResponse(500, "error parsing qacct -j response")
 
             # memUsage = float(mem / cpu * slots if cpu > 0.0 else 0.0)
             # usage = ResourceUsage(
