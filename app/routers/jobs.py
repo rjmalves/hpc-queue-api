@@ -56,6 +56,7 @@ async def read_job(
         # if not isinstance(ans_finished, HTTPResponse):
         #     return ans_finished
         raise HTTPException(status_code=ans.code, detail=ans.detail)
+    print(ans, type(ans))
     return ans
 
 
