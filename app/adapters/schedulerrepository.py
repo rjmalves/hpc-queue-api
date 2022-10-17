@@ -87,7 +87,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
 
         cod, ans = await run_terminal_retry(["qstat -xml"])
         if cod != 0:
-            return HTTPResponse(500, f"error running qstat: {ans}")
+            return HTTPResponse(code=500, detail=f"error running qstat: {ans}")
         else:
             return __parse_list_jobs(ans)
 
@@ -97,13 +97,19 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             try:
                 root = ET.fromstring(content)
             except Exception:
-                return HTTPResponse(500, "error parsing qstat response")
+                return HTTPResponse(
+                    code=500, detail="error parsing qstat response"
+                )
             jobinfo = root.find("djob_info")
             if not jobinfo:
-                return HTTPResponse(503, "detailed job info not yet available")
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
             element = jobinfo.find("element")
             if not element:
-                return HTTPResponse(503, "detailed job info not yet available")
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
             status = SGESchedulerRepository.STATUS_MAPPING.get(
                 "", JobStatus.UNKNOWN
             )
@@ -153,7 +159,9 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             if not all(
                 [jobId, name, reservedSlots, workingDirectory, scriptFile]
             ):
-                return HTTPResponse(503, "detailed job info not yet available")
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
             # converts total memory from B to GB
             B_TO_GB = 1073741824
             usage = (
@@ -187,11 +195,15 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
 
         cod, ans = await run_terminal_retry([f"qstat -j {jobId} -xml"])
         if cod != 0:
-            return HTTPResponse(500, f"error running qstat command: {ans}")
+            return HTTPResponse(
+                code=500, detail=f"error running qstat command: {ans}"
+            )
         else:
             detailedJob = __parse_get_job(ans)
             if isinstance(detailedJob, HTTPResponse):
-                return HTTPResponse(500, "error parsing qstat -j result")
+                return HTTPResponse(
+                    code=500, detail="error parsing qstat -j result"
+                )
             else:
                 return detailedJob
 
@@ -242,8 +254,10 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 elif maxVmemStr in line:
                     maxvmem += float(line[13:].strip().split("G")[0])
 
-            # if not all([name, startTime, endTime, slots]):
-            #     return HTTPResponse(500, "error parsing qacct -j response")
+            if not all([name, startTime, endTime, slots]):
+                return HTTPResponse(
+                    code=500, detail="error parsing qacct -j response"
+                )
 
             # memUsage = float(mem / cpu * slots if cpu > 0.0 else 0.0)
             # usage = ResourceUsage(
@@ -269,9 +283,9 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             )
 
         cod, ans = await run_terminal_retry([f"qacct -j {jobId}"])
-        return HTTPResponse(404, ans)
+        return HTTPResponse(code=404, detail=ans)
         if cod != 0:
-            return HTTPResponse(404, f"job {jobId} not found")
+            return HTTPResponse(code=404, detail=f"job {jobId} not found")
         else:
             detailedJob = __parse_get_job(ans)
             return detailedJob
@@ -285,9 +299,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         if not job.name:
             job.name = Path(job.workingDirectory).parts[-1]
         if not job.workingDirectory:
-            return HTTPResponse(400, "workingDirectory is mandatory")
+            return HTTPResponse(
+                code=400, detail="workingDirectory is mandatory"
+            )
         if not job.scriptFile:
-            return HTTPResponse(400, "scriptFile is mandatory")
+            return HTTPResponse(code=400, detail="scriptFile is mandatory")
         command = [
             "qsub",
             "-cwd",
@@ -303,7 +319,9 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         with set_directory(job.workingDirectory):
             cod, ans = await run_terminal_retry(command)
         if cod != 0:
-            return HTTPResponse(500, f"error running qsub command: {ans}")
+            return HTTPResponse(
+                code=500, detail=f"error running qsub command: {ans}"
+            )
         else:
             __parse_submit_ans(ans)
             return job
@@ -314,7 +332,9 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         command = ["qdel", jobId]
         cod, ans = await run_terminal_retry(command)
         if cod != 0:
-            return HTTPResponse(500, f"error running qdel command: {ans}")
+            return HTTPResponse(
+                code=500, detail=f"error running qdel command: {ans}"
+            )
         else:
             return Job(jobId=jobId, clusterId=Settings.clusterId)
 
