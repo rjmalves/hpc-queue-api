@@ -96,7 +96,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         def __parse_get_job(content: str) -> Union[Job, HTTPResponse]:
             try:
                 root = ET.fromstring(content)
-            except ET.ParseError:
+            except Exception:
                 return HTTPResponse(500, "error parsing qstat response")
             jobinfo = root.find("djob_info")
             if not jobinfo:
