@@ -118,9 +118,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             )
             argsList = element.find("JB_job_args")
             argsContent = (
-                [a.find("ST_name").text for a in argsList]
-                if len(argsList) > 0
-                else []
+                [a.find("ST_name").text for a in argsList] if argsList else []
             )
             taskList = None
             masterUsageList = None
