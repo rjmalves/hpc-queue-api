@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from typing import List
 from app.internal.httpresponse import HTTPResponse
 from app.models.job import Job
+import logging
 
 from app.adapters.schedulerrepository import AbstractSchedulerRepository
 from app.internal.dependencies import scheduler
@@ -12,8 +13,18 @@ router = APIRouter(
     tags=["jobs"],
 )
 
+logger = logging.getLogger("jobs")
 
-@router.get("/", response_model=List[Job])
+responses = {
+    201: {"detail": ""},
+    202: {"detail": ""},
+    404: {"detail": ""},
+    500: {"detail": ""},
+    503: {"detail": ""},
+}
+
+
+@router.get("/", response_model=List[Job], responses=responses)
 async def read_jobs(
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ):
@@ -23,7 +34,7 @@ async def read_jobs(
     return ans
 
 
-@router.post("/")
+@router.post("/", responses=responses)
 async def create_job(
     job: Job,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
@@ -37,7 +48,7 @@ async def create_job(
     )
 
 
-@router.get("/{jobId}", response_model=Job)
+@router.get("/{jobId}", response_model=Job, responses=responses)
 async def read_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
@@ -57,6 +68,7 @@ async def read_job(
             return detailedJob
     elif len(generalJobData) == 0:
         detailedJob = await scheduler.get_finished_job(jobId)
+        logger.info(detailedJob)
         if isinstance(detailedJob, HTTPResponse):
             raise HTTPException(
                 status_code=detailedJob.code, detail=detailedJob.detail
@@ -65,7 +77,7 @@ async def read_job(
             return detailedJob
 
 
-@router.delete("/{jobId}")
+@router.delete("/{jobId}", responses=responses)
 async def delete_job(
     jobId: str,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
