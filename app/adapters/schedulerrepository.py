@@ -230,7 +230,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             io = 0.0
             iow = 0.0
             maxvmem = 0.0
-            for line in content:
+            for line in content.split("\n"):
                 if nameStr in line:
                     name = line[13:].strip()
                 elif startTimeStr in line:
