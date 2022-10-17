@@ -269,6 +269,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             )
 
         cod, ans = await run_terminal_retry([f"qacct -j {jobId}"])
+        return HTTPResponse(404, ans)
         if cod != 0:
             return HTTPResponse(404, f"job {jobId} not found")
         else:
