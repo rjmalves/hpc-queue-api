@@ -249,7 +249,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 maxTotalMemory=maxvmem,
                 processIO=io,
                 processIOWaiting=iow,
-                timeInstant=endTime,
+                timeInstant=endTime if endTime else datetime.now(),
             )
 
             return Job(
