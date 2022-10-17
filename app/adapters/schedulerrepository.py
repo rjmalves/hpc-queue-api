@@ -245,7 +245,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                     slots = int(line[13:].strip())
                 elif cpuStr in line:
                     cpu += float(line[13:].strip())
-                elif memStr in line:
+                elif memStr in line and maxVmemStr not in line:
                     mem += float(line[13:].strip())
                 elif ioStr in line:
                     io += float(line[13:].strip())
