@@ -256,7 +256,8 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
 
             if not all([name, startTime, endTime, slots]):
                 return HTTPResponse(
-                    code=500, detail="error parsing qacct -j response"
+                    code=500,
+                    detail=f"error parsing qacct -j response: {content}",
                 )
 
             memUsage = float(mem / cpu * slots if cpu > 0.0 else 0.0)
