@@ -280,7 +280,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 endTime=endTime,
                 clusterId=Settings.clusterId,
                 reservedSlots=int(slots),
-                resourceUsage=None,
+                resourceUsage=usage,
             )
 
         cod, ans = await run_terminal_retry([f"qacct -j {jobId}"])
