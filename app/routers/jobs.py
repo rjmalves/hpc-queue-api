@@ -52,6 +52,9 @@ async def read_job(
 ):
     ans = await scheduler.get_job(jobId)
     if isinstance(ans, HTTPResponse):
+        ans_finished = await scheduler.get_finished_job(jobId)
+        if not isinstance(ans, HTTPResponse):
+            return ans
         raise HTTPException(status_code=ans.code, detail=ans.detail)
     return ans
 

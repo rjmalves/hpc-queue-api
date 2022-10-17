@@ -17,6 +17,7 @@ class Job(BaseModel):
     name: Optional[str]
     startTime: Optional[datetime]
     lastStatusUpdateTime: Optional[datetime]
+    endTime: Optional[datetime]
     clusterId: str
     workingDirectory: Optional[str]
     reservedSlots: Optional[int]

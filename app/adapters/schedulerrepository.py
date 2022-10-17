@@ -27,6 +27,11 @@ class AbstractSchedulerRepository(ABC):
 
     @staticmethod
     @abstractmethod
+    async def get_finished_job(jobId: str) -> Union[Job, HTTPResponse]:
+        pass
+
+    @staticmethod
+    @abstractmethod
     async def submit_job(job: Job) -> Union[Job, HTTPResponse]:
         pass
 
@@ -200,6 +205,82 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 return detailedJob
             else:
                 return HTTPResponse(500, "error parsing qstat -j result")
+
+    @staticmethod
+    async def get_finished_job(jobId: str) -> Union[Job, HTTPResponse]:
+        def __parse_get_job(content: str) -> Union[Job, HTTPResponse]:
+
+            # Iterates for getting info in the nodes
+            nameStr = "jobname  "
+            startTimeStr = "start_time  "
+            endTimeStr = "end_time    "
+            slotsStr = "slots   "
+            cpuStr = "cpu      "
+            memStr = "mem      "
+            ioStr = "io      "
+            iowStr = "iow     "
+            maxVmemStr = "maxvmem   "
+            name = None
+            startTime = None
+            endTime = None
+            slots = None
+            cpu = 0.0
+            mem = 0.0
+            io = 0.0
+            iow = 0.0
+            maxvmem = 0.0
+            for line in content:
+                if nameStr in line:
+                    name = line[13:].strip()
+                elif startTimeStr in line:
+                    startTime = datetime.strptime(
+                        line[13:].strip(), "%a %b %d %H:%M:%S %Y"
+                    )
+                elif endTimeStr in line:
+                    endTime = datetime.strptime(
+                        line[13:].strip(), "%a %b %d %H:%M:%S %Y"
+                    )
+                elif slotsStr in line:
+                    slots = int(line[13:].strip())
+                elif cpuStr in line:
+                    cpu += float(line[13:].strip())
+                elif memStr in line:
+                    mem += float(line[13:].strip())
+                elif ioStr in line:
+                    io += float(line[13:].strip())
+                elif iowStr in line:
+                    iow += float(line[13:].strip())
+                elif maxVmemStr in line:
+                    maxvmem += float(line[13:].strip().split("G")[0])
+
+            usage = ResourceUsage(
+                cpuSeconds=cpu,
+                memoryCpuSeconds=mem,
+                instantTotalMemory=mem / cpu * slots,
+                maxTotalMemory=maxvmem,
+                processIO=io,
+                processIOWaiting=iow,
+                timeInstant=endTime,
+            )
+
+            return Job(
+                jobId=str(jobId),
+                status=JobStatus.STOPPED,
+                name=str(name),
+                startTime=startTime,
+                lastStatusUpdateTime=endTime,
+                endTime=endTime,
+                clusterId=Settings.clusterId,
+                reservedSlots=int(slots),
+                resourceUsage=usage,
+            )
+
+        cod, ans = await run_terminal_retry([f"qacct -j {jobId}"])
+        if cod != 0:
+            return HTTPResponse(500, f"error running qacct command: {ans}")
+        else:
+            detailedJob = __parse_get_job(ans)
+            return detailedJob
 
     @staticmethod
     async def submit_job(job: Job) -> Union[Job, HTTPResponse]:
