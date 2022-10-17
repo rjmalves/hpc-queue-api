@@ -191,9 +191,9 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
         else:
             detailedJob = __parse_get_job(ans)
             if isinstance(detailedJob, HTTPResponse):
-                return detailedJob
-            else:
                 return HTTPResponse(500, "error parsing qstat -j result")
+            else:
+                return detailedJob
 
     @staticmethod
     async def get_finished_job(jobId: str) -> Union[Job, HTTPResponse]:
