@@ -245,7 +245,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             usage = ResourceUsage(
                 cpuSeconds=cpu,
                 memoryCpuSeconds=mem,
-                instantTotalMemory=mem / cpu * slots,
+                instantTotalMemory=mem / cpu * slots if cpu > 0.0 else 0.0,
                 maxTotalMemory=maxvmem,
                 processIO=io,
                 processIOWaiting=iow,
