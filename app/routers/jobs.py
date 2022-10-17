@@ -59,6 +59,7 @@ async def read_job(
     generalJobData = [j for j in allJobs if j.jobId == jobId]
     if len(generalJobData) == 1:
         detailedJob = await scheduler.get_job(jobId)
+        logger.info(detailedJob)
         if isinstance(detailedJob, HTTPResponse):
             raise HTTPException(
                 status_code=detailedJob.code, detail=detailedJob.detail
