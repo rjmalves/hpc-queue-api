@@ -245,10 +245,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             if not all([name, startTime, endTime, slots]):
                 return HTTPResponse(500, "error parsing qacct -j response")
 
+            memUsage = float(mem / cpu * slots if cpu > 0.0 else 0.0)
             usage = ResourceUsage(
                 cpuSeconds=cpu,
                 memoryCpuSeconds=mem,
-                instantTotalMemory=mem / cpu * slots if cpu > 0.0 else 0.0,
+                instantTotalMemory=memUsage,
                 maxTotalMemory=maxvmem,
                 processIO=io,
                 processIOWaiting=iow,
@@ -256,7 +257,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             )
 
             return Job(
-                jobId=str(jobId),
+                jobId=jobId,
                 status=JobStatus.STOPPED,
                 name=str(name),
                 startTime=startTime,

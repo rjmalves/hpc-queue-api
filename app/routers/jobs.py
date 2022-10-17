@@ -3,7 +3,6 @@ from fastapi.responses import JSONResponse
 from typing import List
 from app.internal.httpresponse import HTTPResponse
 from app.models.job import Job
-import logging
 
 from app.adapters.schedulerrepository import AbstractSchedulerRepository
 from app.internal.dependencies import scheduler
@@ -13,7 +12,6 @@ router = APIRouter(
     tags=["jobs"],
 )
 
-logger = logging.getLogger("jobs")
 
 responses = {
     201: {"detail": ""},
@@ -59,7 +57,6 @@ async def read_job(
     generalJobData = [j for j in allJobs if j.jobId == jobId]
     if len(generalJobData) == 1:
         detailedJob = await scheduler.get_job(jobId)
-        logger.info(detailedJob)
         if isinstance(detailedJob, HTTPResponse):
             raise HTTPException(
                 status_code=detailedJob.code, detail=detailedJob.detail
@@ -69,7 +66,6 @@ async def read_job(
             return detailedJob
     elif len(generalJobData) == 0:
         detailedJob = await scheduler.get_finished_job(jobId)
-        logger.info(detailedJob)
         if isinstance(detailedJob, HTTPResponse):
             raise HTTPException(
                 status_code=detailedJob.code, detail=detailedJob.detail
