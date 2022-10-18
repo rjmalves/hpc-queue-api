@@ -164,14 +164,16 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             B_TO_GB = 1073741824
             usage = (
                 ResourceUsage(
-                    cpuSeconds=sum([u["cpu"] for u in usages]),
-                    memoryCpuSeconds=sum([u["mem"] for u in usages]),
-                    instantTotalMemory=sum([u["vmem"] for u in usages])
+                    cpuSeconds=sum([u.get("cpu", 0.0) for u in usages]),
+                    memoryCpuSeconds=sum([u.get("mem", 0.0) for u in usages]),
+                    instantTotalMemory=sum(
+                        [u.get("vmem", 0.0) for u in usages]
+                    )
                     / B_TO_GB,
-                    maxTotalMemory=sum([u["maxvmem"] for u in usages])
+                    maxTotalMemory=sum([u.get("maxvmem", 0.0) for u in usages])
                     / B_TO_GB,
-                    processIO=sum([u["io"] for u in usages]),
-                    processIOWaiting=sum([u["iow"] for u in usages]),
+                    processIO=sum([u.get("io", 0.0) for u in usages]),
+                    processIOWaiting=sum([u.get("iow", 0.0) for u in usages]),
                     timeInstant=datetime.now(),
                 )
                 if len(usages) > 0
