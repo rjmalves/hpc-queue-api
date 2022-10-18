@@ -258,7 +258,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                     unit = line[13:].strip()[-1]
                     maxvmem += float(
                         line[13:].strip()[:-1]
-                    ) * unitMultipliers.get(unit, 1073741824.0)
+                    ) / unitMultipliers.get(unit, 1073741824.0)
 
             if not all([name, startTime, endTime, slots]):
                 return HTTPResponse(
