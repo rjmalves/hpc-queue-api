@@ -174,7 +174,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                     processIOWaiting=sum([u["iow"] for u in usages]),
                     timeInstant=datetime.now(),
                 )
-                if any([taskList, masterUsageList])
+                if len(usages) > 0
                 else None
             )
             return Job(
