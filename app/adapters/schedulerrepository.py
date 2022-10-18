@@ -228,6 +228,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             io = 0.0
             iow = 0.0
             maxvmem = 0.0
+            unitMultipliers = {
+                "k": 1e6,
+                "M": 1e3,
+                "G": 1.0,
+            }
             for line in content.split("\n"):
                 if nameStr in line:
                     name = line[13:].strip()
@@ -250,7 +255,10 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 elif iowStr in line:
                     iow += float(line[13:].strip())
                 elif maxVmemStr in line:
-                    maxvmem += float(line[13:].strip().split("G")[0])
+                    unit = line[13:].strip()[-1]
+                    maxvmem += (
+                        float(line[13:].strip()[:-1]) * unitMultipliers[unit]
+                    )
 
             if not all([name, startTime, endTime, slots]):
                 return HTTPResponse(
