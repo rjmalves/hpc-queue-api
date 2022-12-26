@@ -42,7 +42,7 @@ async def create_job(
     if isinstance(ans, HTTPResponse):
         raise HTTPException(status_code=ans.code, detail=ans.detail)
     return JSONResponse(
-        status_code=201, content={"detail": f"jobId: {ans.jobId}"}
+        status_code=201, content={"jobId": ans.jobId}
     )
 
 
