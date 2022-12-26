@@ -310,6 +310,8 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             return HTTPResponse(
                 code=400, detail="workingDirectory is mandatory"
             )
+        if not job.reservedSlots:
+            return HTTPResponse(code=400, detail="reservedSlots is mandatory")
         if not job.scriptFile:
             return HTTPResponse(code=400, detail="scriptFile is mandatory")
         command = [
