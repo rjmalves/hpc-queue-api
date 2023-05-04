@@ -210,7 +210,6 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
     @staticmethod
     async def get_finished_job(jobId: str) -> Union[Job, HTTPResponse]:
         def __parse_get_job(content: str) -> Union[Job, HTTPResponse]:
-
             # Iterates for getting info in the nodes
             nameStr = "jobname  "
             startTimeStr = "start_time  "
@@ -362,38 +361,105 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
         "C": JobStatus.STOPPED,
     }
 
+    KB_TO_GB = 1048576
+
     @staticmethod
-    def __parse_to_datetime(time_str: str) -> timedelta:
+    def __parse_to_timedelta(time_str: str) -> timedelta:
         hour, minute, second = time_str.split(":")
         return timedelta(
             hours=int(hour), minutes=int(minute), seconds=int(second)
         )
 
     @staticmethod
+    def __parse_to_datetime(time_str: str) -> datetime:
+        return datetime.strptime(time_str, "%a %b %d %H:%M:%S %Y")
+
+    @staticmethod
     async def list_jobs() -> Union[List[Job], HTTPResponse]:
         def __parse_list_jobs(content: str) -> List[Job]:
-            lines_to_skip = 5
+            NEW_JOB_PATTERN = "Job Id:"
+            JOB_NAME_PATTERN = "Job_Name ="
+            JOB_STATUS_PATTERN = "job_state ="
+            JOB_START_TIME_PATTERN = "start_time ="
+            JOB_SLOTS_PATTERN = "Resource_List.nodes ="
+            JOB_WORKING_DIR_PATTERN = "Output_Path ="
+            JOB_ARGS_PATTERN = "submit_args ="
+            JOB_RESOURCE_PATTERN = "resources_used."
             lines = content.split("\n")
             jobs: List[Job] = []
             if len(lines) < 3:
                 return jobs
-            for line in lines[lines_to_skip:]:
+            jobId = None
+            name = None
+            status = None
+            startTime = None
+            reservedSlots = None
+            workingDirectory = None
+            scriptFile = None
+            jobArgs = None
+            resources = {
+                "cput": None,
+                "mem": None,
+                "vmem": None,
+            }
+            for line in lines:
+                if len(line) == 0:
+                    if jobId is not None:
+                        jobs.append(Job)
                 if len(line) < 5:
                     continue
-                status = TorqueSchedulerRepository.STATUS_MAPPING.get(
-                    line[102], JobStatus.UNKNOWN
-                )
-                startTime = (
-                    datetime.now()
-                    - TorqueSchedulerRepository.__parse_to_datetime(
-                        line[104:114].strip()
+                if NEW_JOB_PATTERN in line:
+                    jobId = line[7:].strip().split(".")[0]
+                elif JOB_NAME_PATTERN in line:
+                    name = line.split(JOB_NAME_PATTERN)[1].strip()
+                elif JOB_STATUS_PATTERN in line:
+                    status = TorqueSchedulerRepository.STATUS_MAPPING.get(
+                        line.split(JOB_STATUS_PATTERN)[1].strip(),
+                        JobStatus.UNKNOWN,
                     )
-                )
-                jobId = line[:23].split(".")[0]
-                name = line[45:62].strip()
-                reservedSlots = int(line[75:82].strip())
-                if not all([jobId, name, reservedSlots]):
-                    continue
+                elif JOB_START_TIME_PATTERN in line:
+                    startTime = TorqueSchedulerRepository.__parse_to_datetime(
+                        line.split(JOB_START_TIME_PATTERN)[1].strip()
+                    )
+                elif JOB_SLOTS_PATTERN in line:
+                    slotData = (
+                        line.split(JOB_SLOTS_PATTERN)[1].strip().split(":ppn=")
+                    )
+                    reservedSlots = int(slotData[0]) * int(slotData[1])
+                elif JOB_WORKING_DIR_PATTERN in line:
+                    outputPath = Path(
+                        line.split(JOB_WORKING_DIR_PATTERN)[1]
+                        .strip()
+                        .split(":")[1]
+                    )
+                    workingDirectory = str(outputPath.parent)
+                elif JOB_ARGS_PATTERN in line:
+                    args = line.split(JOB_ARGS_PATTERN)[1].strip().split(" ")
+                    scriptFile = args[0]
+                    jobArgs = args[1:]
+                elif JOB_RESOURCE_PATTERN in line:
+                    args = line.split(JOB_ARGS_PATTERN)[1].split("=")
+                    if args[0].strip() == "cput":
+                        cpuTime = (
+                            TorqueSchedulerRepository.__parse_to_timedelta(
+                                args[1].strip()
+                            )
+                        )
+                        resources["cput"] = cpuTime.total_seconds()
+                    elif args[0].strip() == "mem":
+                        mem = (
+                            int(args[1].strip().split("kb")[0])
+                            / TorqueSchedulerRepository.KB_TO_GB
+                        )
+
+                        resources["mem"] = mem
+                    elif args[0].strip() == "vmem":
+                        mem = (
+                            int(args[1].strip().split("kb")[0])
+                            / TorqueSchedulerRepository.KB_TO_GB
+                        )
+                        resources["vmem"] = mem
+
                 jobs.append(
                     Job(
                         jobId=str(jobId),
@@ -402,12 +468,25 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                         startTime=startTime,
                         lastStatusUpdateTime=datetime.now(),
                         clusterId=Settings.clusterId,
+                        workingDirectory=workingDirectory,
                         reservedSlots=int(reservedSlots),
+                        scriptFile=scriptFile,
+                        jobArgs=jobArgs,
+                        resourceUsage=ResourceUsage(
+                            cpuSeconds=resources["cput"],
+                            memoryCpuSeconds=resources["cput"]
+                            * resources["mem"],
+                            instantTotalMemory=resources["mem"],
+                            maxTotalMemory=resources["vmem"],
+                            processIO=0.0,
+                            processIOWaiting=0.0,
+                            timeInstant=datetime.now(),
+                        ),
                     )
                 )
             return jobs
 
-        cod, ans = await run_terminal_retry(["qstat -a"])
+        cod, ans = await run_terminal_retry(["qstat -f"])
         if cod != 0:
             return HTTPResponse(code=500, detail=f"error running qstat: {ans}")
         else:
@@ -415,92 +494,118 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
 
     @staticmethod
     async def get_job(jobId: str) -> Union[Job, HTTPResponse]:
-        def __parse_get_job(content: str) -> Union[Job, HTTPResponse]:
-            try:
-                lines = content.split("\n")
-                resourcelines = []
-                status = None
-                name = None
-                startTime = None
-                workingDirectory = None
-                reservedSlots = None
-                scriptFile = None
-                args = []
-                resourceUsage = None
-                for line in lines:
-                    if "Job_Name" in line:
-                        name = line.split("=")[1].strip()
-                    elif "job_state" in line:
-                        status = TorqueSchedulerRepository.STATUS_MAPPING.get(
-                            line.split("=")[1].strip(), JobStatus.UNKNOWN
+        def __parse_get_job(content: str) -> Job:
+            NEW_JOB_PATTERN = "Job Id:"
+            JOB_NAME_PATTERN = "Job_Name ="
+            JOB_STATUS_PATTERN = "job_state ="
+            JOB_START_TIME_PATTERN = "start_time ="
+            JOB_SLOTS_PATTERN = "Resource_List.nodes ="
+            JOB_WORKING_DIR_PATTERN = "Output_Path ="
+            JOB_ARGS_PATTERN = "submit_args ="
+            JOB_RESOURCE_PATTERN = "resources_used."
+            lines = content.split("\n")
+            jobs: List[Job] = []
+            if len(lines) < 3:
+                return jobs
+            jobId = None
+            name = None
+            status = None
+            startTime = None
+            reservedSlots = None
+            workingDirectory = None
+            scriptFile = None
+            jobArgs = None
+            resources = {
+                "cput": None,
+                "mem": None,
+                "vmem": None,
+            }
+            for line in lines:
+                if len(line) == 0:
+                    if jobId is not None:
+                        jobs.append(Job)
+                if len(line) < 5:
+                    continue
+                if NEW_JOB_PATTERN in line:
+                    jobId = line[7:].strip().split(".")[0]
+                elif JOB_NAME_PATTERN in line:
+                    name = line.split(JOB_NAME_PATTERN)[1].strip()
+                elif JOB_STATUS_PATTERN in line:
+                    status = TorqueSchedulerRepository.STATUS_MAPPING.get(
+                        line.split(JOB_STATUS_PATTERN)[1].strip(),
+                        JobStatus.UNKNOWN,
+                    )
+                elif JOB_START_TIME_PATTERN in line:
+                    startTime = TorqueSchedulerRepository.__parse_to_datetime(
+                        line.split(JOB_START_TIME_PATTERN)[1].strip()
+                    )
+                elif JOB_SLOTS_PATTERN in line:
+                    slotData = (
+                        line.split(JOB_SLOTS_PATTERN)[1].strip().split(":ppn=")
+                    )
+                    reservedSlots = int(slotData[0]) * int(slotData[1])
+                elif JOB_WORKING_DIR_PATTERN in line:
+                    outputPath = Path(
+                        line.split(JOB_WORKING_DIR_PATTERN)[1]
+                        .strip()
+                        .split(":")[1]
+                    )
+                    workingDirectory = str(outputPath.parent)
+                elif JOB_ARGS_PATTERN in line:
+                    args = line.split(JOB_ARGS_PATTERN)[1].strip().split(" ")
+                    scriptFile = args[0]
+                    jobArgs = args[1:]
+                elif JOB_RESOURCE_PATTERN in line:
+                    args = line.split(JOB_ARGS_PATTERN)[1].split("=")
+                    if args[0].strip() == "cput":
+                        cpuTime = (
+                            TorqueSchedulerRepository.__parse_to_timedelta(
+                                args[1].strip()
+                            )
                         )
-                    elif "ctime" in line:
-                        startTime = datetime.strptime(
-                            line.split("=")[1].strip(), "%a %b %d %H:%M:%S %Y"
+                        resources["cput"] = cpuTime.total_seconds()
+                    elif args[0].strip() == "mem":
+                        mem = (
+                            int(args[1].strip().split("kb")[0])
+                            / TorqueSchedulerRepository.KB_TO_GB
                         )
-                    elif "Output_Path" in line:
-                        outfile = line.split("=")[1].strip().split(":")[1]
-                        workingDirectory = str(Path(outfile).parent)
-                    elif "Resource_List.nodes" in line:
-                        nodedata = line.split(" = ")[1].strip()
-                        procdata = nodedata.split(":ppn=")
-                        reservedSlots = int(procdata[0]) * int(procdata[1])
-                    elif "submit_args" in line:
-                        args = line.split("=")[1].strip().split(" ")
-                    elif "resources_used" in line:
-                        resourcelines.append(line)
-            except Exception:
-                return HTTPResponse(
-                    code=500, detail="error parsing qstat response"
-                )
 
-            # converts total memory from kB to GB
-            B_TO_GB = 1073741824
-            KB_TO_GB = 1048576
-            cpuSeconds = None
-            instantTotalMemory = None
-            maxTotalMemory = None
-            for line in resourcelines:
-                if ".cput" in line:
-                    cpuSeconds = TorqueSchedulerRepository.__parse_to_datetime(
-                        line.split("=")[1].strip()
-                    ).total_seconds()
-                elif ".mem" in line:
-                    instantTotalMemory = (
-                        float(line.split("=")[1].strip().split("kb")[0])
-                        / KB_TO_GB
+                        resources["mem"] = mem
+                    elif args[0].strip() == "vmem":
+                        mem = (
+                            int(args[1].strip().split("kb")[0])
+                            / TorqueSchedulerRepository.KB_TO_GB
+                        )
+                        resources["vmem"] = mem
+
+                jobs.append(
+                    Job(
+                        jobId=str(jobId),
+                        name=str(name),
+                        status=status,
+                        startTime=startTime,
+                        lastStatusUpdateTime=datetime.now(),
+                        clusterId=Settings.clusterId,
+                        workingDirectory=workingDirectory,
+                        reservedSlots=int(reservedSlots),
+                        scriptFile=scriptFile,
+                        jobArgs=jobArgs,
+                        resourceUsage=ResourceUsage(
+                            cpuSeconds=resources["cput"],
+                            memoryCpuSeconds=resources["cput"]
+                            * resources["mem"],
+                            instantTotalMemory=resources["mem"],
+                            maxTotalMemory=resources["vmem"],
+                            processIO=0.0,
+                            processIOWaiting=0.0,
+                            timeInstant=datetime.now(),
+                        ),
                     )
-                elif ".vmem" in line:
-                    maxTotalMemory = (
-                        float(line.split("=")[1].strip().split("kb")[0])
-                        / KB_TO_GB
-                    )
-            usage = (
-                ResourceUsage(
-                    cpuSeconds=cpuSeconds,
-                    memoryCpuSeconds=instantTotalMemory * cpuSeconds,
-                    instantTotalMemory=instantTotalMemory,
-                    maxTotalMemory=maxTotalMemory,
-                    processIO=0.0,
-                    processIOWaiting=0.0,
-                    timeInstant=datetime.now(),
                 )
-                if all([cpuSeconds, instantTotalMemory, maxTotalMemory])
-                else None
-            )
-            return Job(
-                jobId=str(jobId),
-                status=status,
-                name=str(name),
-                startTime=startTime,
-                lastStatusUpdateTime=datetime.now(),
-                clusterId=Settings.clusterId,
-                workingDirectory=str(workingDirectory),
-                reservedSlots=int(reservedSlots),
-                scriptFile=str(scriptFile),
-                args=args,
-                resourceUsage=usage,
-            )
+            if len(jobs) != 1:
+                return HTTPResponse(500, "")
+            else:
+                return jobs[0]
 
         cod, ans = await run_terminal_retry([f"qstat -f {jobId}"])
         if cod != 0:
@@ -519,7 +624,6 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
     @staticmethod
     async def get_finished_job(jobId: str) -> Union[Job, HTTPResponse]:
         def __parse_get_job(content: str) -> Union[Job, HTTPResponse]:
-
             # Iterates for getting info in the nodes
             startTimeStr = "Job Run"
             resourcesStr = "Exit_status="

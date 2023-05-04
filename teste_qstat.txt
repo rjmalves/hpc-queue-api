@@ -1,0 +1,137 @@
+Job Id: 90137.prd-cluster-01.ons.org.br
+    Job_Name = newave
+    Job_Owner = gpo2@prd-cluster-01.ons.org.br
+    resources_used.cput = 110:22:22
+    resources_used.energy_used = 0
+    resources_used.mem = 34658964kb
+    resources_used.vmem = 102001356kb
+    resources_used.walltime = 03:27:19
+    job_state = R
+    queue = gpo
+    server = prd-cluster-01.ons.org.br
+    Checkpoint = u
+    ctime = Tue May  2 10:29:37 2023
+    Error_Path = prd-cluster-01.ons.org.br:/home/USER/gpo2/2023/P05_2023/Outro
+	s/Sombra_ACL/newave.e90137
+    exec_host = n1-13.cluster.local/0-31+n1-15.cluster.local/0-31+n1-14.cluste
+	r.local/0-31
+    Hold_Types = n
+    Join_Path = oe
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Tue May  2 10:29:37 2023
+    Output_Path = prd-cluster-01.ons.org.br:/home/USER/gpo2/2023/P05_2023/Outr
+	os/Sombra_ACL/newave.o90137
+    Priority = 0
+    qtime = Tue May  2 10:29:37 2023
+    Rerunable = True
+    Resource_List.nodect = 3
+    Resource_List.nodes = 3:ppn=32
+    Resource_List.walltime = 50:00:00
+    session_id = 11344
+    Shell_Path_List = /bin/bash
+    euser = gpo2
+    egroup = users
+    queue_type = E
+    comment = Job started on Tue May 02 at 10:29
+    etime = Tue May  2 10:29:37 2023
+    submit_args = /home/USER/gpo2/versoes/v28.0.3/newave280003.job -l nodes=3:
+	ppn=32 -q gpo
+    start_time = Tue May  2 10:29:37 2023
+    Walltime.Remaining = 167497
+    start_count = 1
+    fault_tolerant = False
+    job_radix = 0
+    submit_host = prd-cluster-01.ons.org.br
+    request_version = 1
+
+Job Id: 90142.prd-cluster-01.ons.org.br
+    Job_Name = newave
+    Job_Owner = gpo2@prd-cluster-01.ons.org.br
+    resources_used.cput = 70:03:44
+    resources_used.energy_used = 0
+    resources_used.mem = 63796780kb
+    resources_used.vmem = 101287400kb
+    resources_used.walltime = 02:11:35
+    job_state = R
+    queue = batch
+    server = prd-cluster-01.ons.org.br
+    Checkpoint = u
+    ctime = Tue May  2 11:45:07 2023
+    Error_Path = prd-cluster-01.ons.org.br:/home/USER/gpo2/2023/A04_2023/Outro
+	s/sombra_ACL_MMGD/newave.e90142
+    exec_host = n1-10.cluster.local/0-31+n1-12.cluster.local/0-31
+    Hold_Types = n
+    Join_Path = oe
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Tue May  2 11:45:07 2023
+    Output_Path = prd-cluster-01.ons.org.br:/home/USER/gpo2/2023/A04_2023/Outr
+	os/sombra_ACL_MMGD/newave.o90142
+    Priority = 0
+    qtime = Tue May  2 11:45:07 2023
+    Rerunable = True
+    Resource_List.nodect = 2
+    Resource_List.nodes = 2:ppn=32
+    Resource_List.walltime = 50:00:00
+    session_id = 24824
+    Shell_Path_List = /bin/bash
+    euser = gpo2
+    egroup = users
+    queue_type = E
+    comment = Job started on Tue May 02 at 11:45
+    etime = Tue May  2 11:45:07 2023
+    submit_args = /home/USER/gpo2/versoes/v28.0.3/newave_280003.job
+    start_time = Tue May  2 11:45:07 2023
+    Walltime.Remaining = 172027
+    start_count = 1
+    fault_tolerant = False
+    job_radix = 0
+    submit_host = prd-cluster-01.ons.org.br
+    request_version = 1
+
+Job Id: 90144.prd-cluster-01.ons.org.br
+    Job_Name = newave
+    Job_Owner = gpo2@prd-cluster-01.ons.org.br
+    resources_used.cput = 69:16:39
+    resources_used.energy_used = 0
+    resources_used.mem = 63939724kb
+    resources_used.vmem = 101470120kb
+    resources_used.walltime = 02:10:07
+    job_state = R
+    queue = batch
+    server = prd-cluster-01.ons.org.br
+    Checkpoint = u
+    ctime = Tue May  2 11:46:40 2023
+    Error_Path = prd-cluster-01.ons.org.br:/home/USER/gpo2/2023/A02_2023/Outro
+	s/sombra_ACL_MMGD/newave.e90144
+    exec_host = n1-09.cluster.local/0-31+n1-08.cluster.local/0-31
+    Hold_Types = n
+    Join_Path = oe
+    Keep_Files = n
+    Mail_Points = a
+    mtime = Tue May  2 11:46:40 2023
+    Output_Path = prd-cluster-01.ons.org.br:/home/USER/gpo2/2023/A02_2023/Outr
+	os/sombra_ACL_MMGD/newave.o90144
+    Priority = 0
+    qtime = Tue May  2 11:46:40 2023
+    Rerunable = True
+    Resource_List.nodect = 2
+    Resource_List.nodes = 2:ppn=32
+    Resource_List.walltime = 50:00:00
+    session_id = 8647
+    Shell_Path_List = /bin/bash
+    euser = gpo2
+    egroup = users
+    queue_type = E
+    comment = Job started on Tue May 02 at 11:46
+    etime = Tue May  2 11:46:40 2023
+    submit_args = /home/USER/gpo2/versoes/v28.0.3/newave_280003.job
+    start_time = Tue May  2 11:46:40 2023
+    Walltime.Remaining = 172120
+    start_count = 1
+    fault_tolerant = False
+    job_radix = 0
+    submit_host = prd-cluster-01.ons.org.br
+    request_version = 1
+
