@@ -362,6 +362,7 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
     }
 
     KB_TO_GB = 1048576
+    MAX_LINE_LENGTH = 78
 
     @staticmethod
     def __parse_to_timedelta(time_str: str) -> timedelta:
@@ -402,10 +403,33 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                 "mem": None,
                 "vmem": None,
             }
-            for line in lines:
+            for idx, line in enumerate(lines):
                 if len(line) == 0:
                     if jobId is not None:
-                        jobs.append(Job)
+                        jobs.append(
+                            Job(
+                                jobId=str(jobId),
+                                name=str(name),
+                                status=status,
+                                startTime=startTime,
+                                lastStatusUpdateTime=datetime.now(),
+                                clusterId=Settings.clusterId,
+                                workingDirectory=workingDirectory,
+                                reservedSlots=int(reservedSlots),
+                                scriptFile=scriptFile,
+                                jobArgs=jobArgs,
+                                resourceUsage=ResourceUsage(
+                                    cpuSeconds=resources["cput"],
+                                    memoryCpuSeconds=resources["cput"]
+                                    * resources["mem"],
+                                    instantTotalMemory=resources["mem"],
+                                    maxTotalMemory=resources["vmem"],
+                                    processIO=0.0,
+                                    processIOWaiting=0.0,
+                                    timeInstant=datetime.now(),
+                                ),
+                            )
+                        )
                 if len(line) < 5:
                     continue
                 if NEW_JOB_PATTERN in line:
@@ -427,18 +451,39 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                     )
                     reservedSlots = int(slotData[0]) * int(slotData[1])
                 elif JOB_WORKING_DIR_PATTERN in line:
+                    # Se atinge o tamanho máximo, pode continuar na linha
+                    # seguinte. Continua até achar o padrão do próximo dado.
+                    num_linhas = 1
+                    continuacao = ""
+                    prox_linha = lines[idx + num_linhas].strip()
+                    while "Priority =" not in prox_linha:
+                        continuacao += prox_linha
+                        num_linhas += 1
+                        prox_linha = lines[idx + num_linhas].strip()
                     outputPath = Path(
-                        line.split(JOB_WORKING_DIR_PATTERN)[1]
-                        .strip()
-                        .split(":")[1]
+                        (
+                            line.split(JOB_WORKING_DIR_PATTERN)[1].strip()
+                            + continuacao
+                        ).split(":")[1]
                     )
                     workingDirectory = str(outputPath.parent)
                 elif JOB_ARGS_PATTERN in line:
-                    args = line.split(JOB_ARGS_PATTERN)[1].strip().split(" ")
+                    # Se atinge o tamanho máximo, pode continuar na linha
+                    # seguinte. Continua até achar o padrão do próximo dado.
+                    num_linhas = 1
+                    continuacao = ""
+                    prox_linha = lines[idx + num_linhas].strip()
+                    while "start_time =" not in prox_linha:
+                        continuacao += prox_linha
+                        num_linhas += 1
+                        prox_linha = lines[idx + num_linhas].strip()
+                    args = (
+                        line.split(JOB_ARGS_PATTERN)[1].strip() + continuacao
+                    ).split(" ")
                     scriptFile = args[0]
                     jobArgs = args[1:]
                 elif JOB_RESOURCE_PATTERN in line:
-                    args = line.split(JOB_ARGS_PATTERN)[1].split("=")
+                    args = line.split(JOB_RESOURCE_PATTERN)[1].split("=")
                     if args[0].strip() == "cput":
                         cpuTime = (
                             TorqueSchedulerRepository.__parse_to_timedelta(
@@ -460,30 +505,6 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                         )
                         resources["vmem"] = mem
 
-                jobs.append(
-                    Job(
-                        jobId=str(jobId),
-                        name=str(name),
-                        status=status,
-                        startTime=startTime,
-                        lastStatusUpdateTime=datetime.now(),
-                        clusterId=Settings.clusterId,
-                        workingDirectory=workingDirectory,
-                        reservedSlots=int(reservedSlots),
-                        scriptFile=scriptFile,
-                        jobArgs=jobArgs,
-                        resourceUsage=ResourceUsage(
-                            cpuSeconds=resources["cput"],
-                            memoryCpuSeconds=resources["cput"]
-                            * resources["mem"],
-                            instantTotalMemory=resources["mem"],
-                            maxTotalMemory=resources["vmem"],
-                            processIO=0.0,
-                            processIOWaiting=0.0,
-                            timeInstant=datetime.now(),
-                        ),
-                    )
-                )
             return jobs
 
         cod, ans = await run_terminal_retry(["qstat -f"])
@@ -520,10 +541,34 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                 "mem": None,
                 "vmem": None,
             }
-            for line in lines:
+            for idx, line in enumerate(lines):
                 if len(line) == 0:
                     if jobId is not None:
-                        jobs.append(Job)
+                        jobs.append(
+                            Job(
+                                jobId=str(jobId),
+                                name=str(name),
+                                status=status,
+                                startTime=startTime,
+                                lastStatusUpdateTime=datetime.now(),
+                                clusterId=Settings.clusterId,
+                                workingDirectory=workingDirectory,
+                                reservedSlots=int(reservedSlots),
+                                scriptFile=scriptFile,
+                                jobArgs=jobArgs,
+                                resourceUsage=ResourceUsage(
+                                    cpuSeconds=resources["cput"],
+                                    memoryCpuSeconds=resources["cput"]
+                                    * resources["mem"],
+                                    instantTotalMemory=resources["mem"],
+                                    maxTotalMemory=resources["vmem"],
+                                    processIO=0.0,
+                                    processIOWaiting=0.0,
+                                    timeInstant=datetime.now(),
+                                ),
+                            )
+                        )
+                        break
                 if len(line) < 5:
                     continue
                 if NEW_JOB_PATTERN in line:
@@ -545,18 +590,39 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                     )
                     reservedSlots = int(slotData[0]) * int(slotData[1])
                 elif JOB_WORKING_DIR_PATTERN in line:
+                    # Se atinge o tamanho máximo, pode continuar na linha
+                    # seguinte. Continua até achar o padrão do próximo dado.
+                    num_linhas = 1
+                    continuacao = ""
+                    prox_linha = lines[idx + num_linhas].strip()
+                    while "Priority =" not in prox_linha:
+                        continuacao += prox_linha
+                        num_linhas += 1
+                        prox_linha = lines[idx + num_linhas].strip()
                     outputPath = Path(
-                        line.split(JOB_WORKING_DIR_PATTERN)[1]
-                        .strip()
-                        .split(":")[1]
+                        (
+                            line.split(JOB_WORKING_DIR_PATTERN)[1].strip()
+                            + continuacao
+                        ).split(":")[1]
                     )
                     workingDirectory = str(outputPath.parent)
                 elif JOB_ARGS_PATTERN in line:
-                    args = line.split(JOB_ARGS_PATTERN)[1].strip().split(" ")
+                    # Se atinge o tamanho máximo, pode continuar na linha
+                    # seguinte. Continua até achar o padrão do próximo dado.
+                    num_linhas = 1
+                    continuacao = ""
+                    prox_linha = lines[idx + num_linhas].strip()
+                    while "start_time =" not in prox_linha:
+                        continuacao += prox_linha
+                        num_linhas += 1
+                        prox_linha = lines[idx + num_linhas].strip()
+                    args = (
+                        line.split(JOB_ARGS_PATTERN)[1].strip() + continuacao
+                    ).split(" ")
                     scriptFile = args[0]
                     jobArgs = args[1:]
                 elif JOB_RESOURCE_PATTERN in line:
-                    args = line.split(JOB_ARGS_PATTERN)[1].split("=")
+                    args = line.split(JOB_RESOURCE_PATTERN)[1].split("=")
                     if args[0].strip() == "cput":
                         cpuTime = (
                             TorqueSchedulerRepository.__parse_to_timedelta(
@@ -578,32 +644,8 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                         )
                         resources["vmem"] = mem
 
-                jobs.append(
-                    Job(
-                        jobId=str(jobId),
-                        name=str(name),
-                        status=status,
-                        startTime=startTime,
-                        lastStatusUpdateTime=datetime.now(),
-                        clusterId=Settings.clusterId,
-                        workingDirectory=workingDirectory,
-                        reservedSlots=int(reservedSlots),
-                        scriptFile=scriptFile,
-                        jobArgs=jobArgs,
-                        resourceUsage=ResourceUsage(
-                            cpuSeconds=resources["cput"],
-                            memoryCpuSeconds=resources["cput"]
-                            * resources["mem"],
-                            instantTotalMemory=resources["mem"],
-                            maxTotalMemory=resources["vmem"],
-                            processIO=0.0,
-                            processIOWaiting=0.0,
-                            timeInstant=datetime.now(),
-                        ),
-                    )
-                )
             if len(jobs) != 1:
-                return HTTPResponse(500, "")
+                return HTTPResponse(code=500, detail="")
             else:
                 return jobs[0]
 
@@ -626,6 +668,7 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
         def __parse_get_job(content: str) -> Union[Job, HTTPResponse]:
             # Iterates for getting info in the nodes
             startTimeStr = "Job Run"
+            endTimeStr = "dequeuing from"
             resourcesStr = "Exit_status="
             timeStr = "resources_used.walltime="
             cpuStr = "resources_used.cput="
@@ -646,7 +689,6 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                 "G": 1.0,
             }
             for line in content.split("\n"):
-                print(line)
                 if startTimeStr in line:
                     startTime = datetime.strptime(
                         line[:19].strip(), "%m/%d/%Y %H:%M:%S"
@@ -660,10 +702,10 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                     maxvmem = (
                         float(vmemdata[:-2]) / unitMultipliers[vmemdata[-2:]]
                     )
-                    runtime = TorqueSchedulerRepository.__parse_to_datetime(
-                        line.split(timeStr)[1].split(" ")[0]
+                elif endTimeStr in line:
+                    endTime = datetime.strptime(
+                        line[:19].strip(), "%m/%d/%Y %H:%M:%S"
                     )
-                    endTime = startTime + runtime
             if not all([startTime, endTime]):
                 return HTTPResponse(
                     code=500,

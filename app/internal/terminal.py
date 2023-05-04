@@ -10,7 +10,7 @@ async def run_terminal_retry(
     cmds: List[str],
     num_retry: int = RETRY_DEFAULT,
     timeout: float = TIMEOUT_DEFAULT,
-) -> Tuple[int, List[str]]:
+) -> Tuple[int, str]:
     """
     Runs a command on the terminal (with retries) and returns.
 
@@ -24,12 +24,12 @@ async def run_terminal_retry(
         cod, outputs = await run_terminal(cmds, timeout)
         if cod == 0:
             return cod, outputs
-    return -1, []
+    return -1, ""
 
 
 async def run_terminal(
     cmds: List[str], timeout: float = TIMEOUT_DEFAULT
-) -> Tuple[Optional[int], List[str]]:
+) -> Tuple[Optional[int], str]:
     """
     Runs a command on the terminal and returns.
 
