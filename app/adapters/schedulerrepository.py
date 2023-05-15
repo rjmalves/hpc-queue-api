@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Type
 
 from app.internal.settings import Settings
 from app.internal.fs import set_directory
@@ -61,16 +61,29 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             root = ET.fromstring(content)
             jobs: List[Job] = []
             for job_xml in root[0]:
+                state = job_xml.find("state")
+                jatStart = job_xml.find("JAT_start_time")
+                jbNumber = job_xml.find("JB_job_number")
+                jbName = job_xml.find("JB_name")
+                slots = job_xml.find("slots")
+                if (
+                    state is None
+                    or jatStart is None
+                    or jbNumber is None
+                    or jbName is None
+                    or slots is None
+                ):
+                    continue
+                if state.text is None or jatStart.text is None:
+                    continue
                 status = SGESchedulerRepository.STATUS_MAPPING.get(
-                    job_xml.find("state").text, JobStatus.UNKNOWN
+                    state.text, JobStatus.UNKNOWN
                 )
-                startTime = datetime.fromisoformat(
-                    job_xml.find("JAT_start_time").text
-                )
-                jobId = job_xml.find("JB_job_number").text
-                name = job_xml.find("JB_name").text
-                reservedSlots = job_xml.find("slots").text
-                if not all([jobId, name, reservedSlots]):
+                startTime = datetime.fromisoformat(jatStart.text)
+                jobId = jbNumber.text
+                name = jbName.text
+                reservedSlots = slots.text
+                if jobId is None or name is None or reservedSlots is None:
                     continue
                 jobs.append(
                     Job(
@@ -79,8 +92,13 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                         status=status,
                         startTime=startTime,
                         lastStatusUpdateTime=datetime.now(),
+                        endTime=None,
                         clusterId=Settings.clusterId,
+                        workingDirectory=None,
+                        scriptFile=None,
                         reservedSlots=int(reservedSlots),
+                        resourceUsage=None,
+                        args=None,
                     )
                 )
             return jobs
@@ -113,13 +131,29 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             status = SGESchedulerRepository.STATUS_MAPPING.get(
                 "", JobStatus.UNKNOWN
             )
-            startTime = datetime.fromtimestamp(
-                float(element.find("JB_submission_time").text)
-            )
+            subTime = element.find("JB_submission_time")
+            if subTime is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            if subTime.text is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            startTime = datetime.fromtimestamp(float(subTime.text))
             argsList = element.find("JB_job_args")
-            argsContent = (
-                [a.find("ST_name").text for a in argsList] if argsList else []
-            )
+            if argsList is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            argsContent = []
+            for a in argsList:
+                stName = a.find("ST_name")
+                if stName is not None:
+                    stText = stName.text
+                    if stText is not None:
+                        argsContent.append(stText)
+
             taskList = None
             masterUsageList = None
             jobTasks = element.find("JB_ja_tasks")
@@ -133,29 +167,73 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             if masterUsageList:
                 usageDict = {}
                 for scaled in masterUsageList:
-                    usageDict[scaled.find("UA_name").text] = float(
-                        scaled.find("UA_value").text
-                    )
+                    uaName = scaled.find("UA_name")
+                    uaValue = scaled.find("UA_value")
+                    if uaName is None or uaValue is None:
+                        continue
+                    if uaName.text is None or uaValue.text is None:
+                        continue
+                    usageDict[uaName.text] = float(uaValue.text)
                 usages.append(usageDict)
             if taskList:
                 for taskElement in taskList:
                     usageDict = {}
                     usageElement = taskElement.find("PET_scaled_usage")
+                    if usageElement is None:
+                        continue
                     for elem in usageElement:
-                        usageDict[elem.find("UA_name").text] = float(
-                            elem.find("UA_value").text
-                        )
+                        if elem is None:
+                            continue
+                        uaName = elem.find("UA_name")
+                        uaValue = elem.find("UA_value")
+                        if uaName is None or uaValue is None:
+                            continue
+                        if uaName.text is None or uaValue.text is None:
+                            continue
+                        usageDict[uaName.text] = float(uaValue.text)
                     usages.append(usageDict)
-
-            jobId = element.find("JB_job_number").text
-            name = element.find("JB_job_name").text
-            reservedSlots = (
-                element.find("JB_pe_range").find("ranges").find("RN_min").text
-            )
-            workingDirectory = element.find("JB_cwd").text
-            scriptFile = element.find("JB_script_file").text
-            if not all(
-                [jobId, name, reservedSlots, workingDirectory, scriptFile]
+            jbNumber = element.find("JB_job_number")
+            jbName = element.find("JB_job_name")
+            if jbNumber is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            if jbName is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            jobId = jbNumber.text
+            name = jbName.text
+            jbRange = element.find("JB_pe_range")
+            if jbRange is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            ranges = jbRange.find("ranges")
+            if ranges is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            rnmin = ranges.find("RN_min")
+            if rnmin is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            reservedSlots = rnmin.text
+            cwd = element.find("JB_cwd")
+            sfile = element.find("JB_script_file")
+            if cwd is None or sfile is None:
+                return HTTPResponse(
+                    code=503, detail="detailed job info not yet available"
+                )
+            workingDirectory = cwd.text
+            scriptFile = sfile.text
+            if (
+                jobId is None
+                or name is None
+                or reservedSlots is None
+                or workingDirectory is None
+                or scriptFile is None
             ):
                 return HTTPResponse(
                     code=503, detail="detailed job info not yet available"
@@ -185,11 +263,12 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 name=str(name),
                 startTime=startTime,
                 lastStatusUpdateTime=datetime.now(),
+                endTime=None,
                 clusterId=Settings.clusterId,
                 workingDirectory=str(workingDirectory),
                 reservedSlots=int(reservedSlots),
                 scriptFile=str(scriptFile),
-                args=argsContent,
+                args=[a for a in argsContent if a is not None],
                 resourceUsage=usage,
             )
 
@@ -261,7 +340,12 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                         line[13:].strip()[:-1]
                     ) / unitMultipliers.get(unit, 1073741824.0)
 
-            if not all([name, startTime, endTime, slots]):
+            if (
+                name is None
+                or startTime is None
+                or endTime is None
+                or slots is None
+            ):
                 return HTTPResponse(
                     code=500,
                     detail=f"error parsing qacct -j response: {content}",
@@ -286,8 +370,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 lastStatusUpdateTime=endTime,
                 endTime=endTime,
                 clusterId=Settings.clusterId,
+                workingDirectory=None,
                 reservedSlots=int(slots),
+                scriptFile=None,
                 resourceUsage=usage,
+                args=None,
             )
 
         cod, ans = await run_terminal_retry([f"qacct -j {jobId}"])
@@ -303,16 +390,17 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             job.jobId = content.split("Your job")[1].split("(")[0].strip()
             job.name = content.split("(")[1].split(")")[0].strip('"')
 
-        if not job.name:
-            job.name = Path(job.workingDirectory).parts[-1]
         if not job.workingDirectory:
             return HTTPResponse(
                 code=400, detail="workingDirectory is mandatory"
             )
+        if not job.name:
+            job.name = Path(job.workingDirectory).parts[-1]
         if not job.reservedSlots:
             return HTTPResponse(code=400, detail="reservedSlots is mandatory")
         if not job.scriptFile:
             return HTTPResponse(code=400, detail="scriptFile is mandatory")
+        args = job.args if job.args is not None else []
         command = [
             "qsub",
             "-cwd",
@@ -323,7 +411,7 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             "orte",
             str(job.reservedSlots),
             job.scriptFile,
-            *(job.args),
+            *args,
         ]
         with set_directory(job.workingDirectory):
             cod, ans = await run_terminal_retry(command)
@@ -345,7 +433,20 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
                 code=500, detail=f"error running qdel command: {ans}"
             )
         else:
-            return Job(jobId=jobId, clusterId=Settings.clusterId)
+            return Job(
+                jobId=jobId,
+                status=None,
+                name=None,
+                startTime=None,
+                lastStatusUpdateTime=None,
+                endTime=None,
+                clusterId=Settings.clusterId,
+                workingDirectory=None,
+                reservedSlots=None,
+                scriptFile=None,
+                args=None,
+                resourceUsage=None,
+            )
 
 
 class TorqueSchedulerRepository(AbstractSchedulerRepository):
@@ -377,7 +478,7 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
 
     @staticmethod
     async def list_jobs() -> Union[List[Job], HTTPResponse]:
-        def __parse_list_jobs(content: str) -> List[Job]:
+        def __parse_list_jobs(content: str) -> Union[List[Job], HTTPResponse]:
             NEW_JOB_PATTERN = "Job Id:"
             JOB_NAME_PATTERN = "Job_Name ="
             JOB_STATUS_PATTERN = "job_state ="
@@ -399,9 +500,9 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             scriptFile = None
             jobArgs = None
             resources = {
-                "cput": None,
-                "mem": None,
-                "vmem": None,
+                "cput": 0.0,
+                "mem": 0.0,
+                "vmem": 0.0,
             }
             for idx, line in enumerate(lines):
                 if len(line) == 0:
@@ -515,7 +616,7 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
 
     @staticmethod
     async def get_job(jobId: str) -> Union[Job, HTTPResponse]:
-        def __parse_get_job(content: str) -> Job:
+        def __parse_get_job(content: str) -> Union[Job, HTTPResponse]:
             NEW_JOB_PATTERN = "Job Id:"
             JOB_NAME_PATTERN = "Job_Name ="
             JOB_STATUS_PATTERN = "job_state ="
@@ -527,7 +628,7 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             lines = content.split("\n")
             jobs: List[Job] = []
             if len(lines) < 3:
-                return jobs
+                return HTTPResponse(code=404, detail="no jobs found")
             jobId = None
             name = None
             status = None
@@ -537,9 +638,9 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             scriptFile = None
             jobArgs = None
             resources = {
-                "cput": None,
-                "mem": None,
-                "vmem": None,
+                "cput": 0.0,
+                "mem": 0.0,
+                "vmem": 0.0,
             }
             for idx, line in enumerate(lines):
                 if len(line) == 0:
@@ -670,7 +771,6 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             startTimeStr = "Job Run"
             endTimeStr = "dequeuing from"
             resourcesStr = "Exit_status="
-            timeStr = "resources_used.walltime="
             cpuStr = "resources_used.cput="
             memStr = "resources_used.mem="
             maxVmemStr = "resources_used.vmem="
@@ -706,7 +806,7 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                     endTime = datetime.strptime(
                         line[:19].strip(), "%m/%d/%Y %H:%M:%S"
                     )
-            if not all([startTime, endTime]):
+            if startTime is None or endTime is None:
                 return HTTPResponse(
                     code=500,
                     detail=f"error parsing tracejob response: {content}",
@@ -730,8 +830,11 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                 lastStatusUpdateTime=endTime,
                 endTime=endTime,
                 clusterId=Settings.clusterId,
+                workingDirectory=None,
                 reservedSlots=int(slots),
+                scriptFile=None,
                 resourceUsage=usage,
+                args=None,
             )
 
         cod, ans = await run_terminal_retry([f"tracejob {jobId}"])
@@ -746,16 +849,17 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
         def __parse_submit_ans(content: str):
             job.jobId = content.split(".")[0].strip()
 
-        if not job.name:
-            job.name = Path(job.workingDirectory).parts[-1]
         if not job.workingDirectory:
             return HTTPResponse(
                 code=400, detail="workingDirectory is mandatory"
             )
+        if not job.name:
+            job.name = Path(job.workingDirectory).parts[-1]
         if not job.reservedSlots:
             return HTTPResponse(code=400, detail="reservedSlots is mandatory")
         if not job.scriptFile:
             return HTTPResponse(code=400, detail="scriptFile is mandatory")
+        args = job.args if job.args is not None else []
         command = [
             "qsub",
             job.scriptFile,
@@ -763,7 +867,7 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             job.name,
             "-l",
             f"nodes={job.reservedSlots}",
-            *(job.args),
+            *args,
         ]
         with set_directory(job.workingDirectory):
             cod, ans = await run_terminal_retry(command)
@@ -785,18 +889,28 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                 code=500, detail=f"error running qdel command: {ans}"
             )
         else:
-            return Job(jobId=jobId, clusterId=Settings.clusterId)
+            return Job(
+                jobId=jobId,
+                status=None,
+                name=None,
+                startTime=None,
+                lastStatusUpdateTime=None,
+                endTime=None,
+                clusterId=Settings.clusterId,
+                workingDirectory=None,
+                reservedSlots=None,
+                scriptFile=None,
+                args=None,
+                resourceUsage=None,
+            )
 
 
-SUPPORTED_SCHEDULERS: Dict[str, AbstractSchedulerRepository] = {
+SUPPORTED_SCHEDULERS: Dict[str, Type[AbstractSchedulerRepository]] = {
     "SGE": SGESchedulerRepository,
     "TORQUE": TorqueSchedulerRepository,
 }
 DEFAULT = SGESchedulerRepository
 
 
-def factory(kind: str) -> AbstractSchedulerRepository:
-    s = SUPPORTED_SCHEDULERS.get(kind)
-    if s is None:
-        return DEFAULT
-    return s
+def factory(kind: str) -> Type[AbstractSchedulerRepository]:
+    return SUPPORTED_SCHEDULERS.get(kind, DEFAULT)

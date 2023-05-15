@@ -49,3 +49,4 @@ async def run_terminal(
         return proc.returncode, stdout.decode("utf-8")
     if stderr:
         return proc.returncode, stderr.decode("utf-8")
+    return -1, ""

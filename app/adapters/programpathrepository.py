@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Type
 
 from app.internal.httpresponse import HTTPResponse
 from app.internal.settings import Settings
@@ -13,11 +13,11 @@ class AbstractProgramPathRepository(ABC):
 
     @classmethod
     @abstractmethod
-    async def list_programs() -> List[Program]:
+    async def list_programs(cls) -> Union[List[Program], HTTPResponse]:
         pass
 
 
-class PEMAWSProgramPathRepository(ABC):
+class PEMAWSProgramPathRepository(AbstractProgramPathRepository):
     """
     Implements the installation patter for managed programs
     in the PEM AWS setup.
@@ -45,8 +45,8 @@ class PEMAWSProgramPathRepository(ABC):
         programs: List[Program] = []
         if not os.path.isdir(programPath):
             return HTTPResponse(
-                500,
-                f"program path not found: {cls.ROOT_PROGRAM_PATH}",
+                code=500,
+                detail=f"program path not found: {cls.ROOT_PROGRAM_PATH}",
             )
         versions = os.listdir(programPath)
         for i, v in enumerate(versions):
@@ -95,14 +95,11 @@ class PEMAWSProgramPathRepository(ABC):
         return newave + decomp
 
 
-SUPPORTED_PATHS: Dict[str, AbstractProgramPathRepository] = {
+SUPPORTED_PATHS: Dict[str, Type[AbstractProgramPathRepository]] = {
     "PEMAWS": PEMAWSProgramPathRepository
 }
 DEFAULT = PEMAWSProgramPathRepository
 
 
-def factory(kind: str) -> AbstractProgramPathRepository:
-    s = SUPPORTED_PATHS.get(kind)
-    if s is None:
-        return DEFAULT
-    return s
+def factory(kind: str) -> Type[AbstractProgramPathRepository]:
+    return SUPPORTED_PATHS.get(kind, DEFAULT)

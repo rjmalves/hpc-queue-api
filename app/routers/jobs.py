@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import JSONResponse
-from typing import List
+from typing import List, Dict, Union
 from app.internal.httpresponse import HTTPResponse
 from app.models.job import Job
 
@@ -13,7 +13,7 @@ router = APIRouter(
 )
 
 
-responses = {
+responses: Dict[Union[int, str], Dict[str, str]] = {
     201: {"detail": ""},
     202: {"detail": ""},
     404: {"detail": ""},
@@ -37,13 +37,10 @@ async def create_job(
     job: Job,
     scheduler: AbstractSchedulerRepository = Depends(scheduler),
 ):
-
     ans = await scheduler.submit_job(job)
     if isinstance(ans, HTTPResponse):
         raise HTTPException(status_code=ans.code, detail=ans.detail)
-    return JSONResponse(
-        status_code=201, content={"jobId": ans.jobId}
-    )
+    return JSONResponse(status_code=201, content={"jobId": ans.jobId})
 
 
 @router.get("/{jobId}", response_model=Job, responses=responses)

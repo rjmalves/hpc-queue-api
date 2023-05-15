@@ -1,0 +1,8 @@
+python-dotenv
+fastapi[all]
+pytest
+pytest-cov
+pytest-mock
+pytest-asyncio
+mypy
+pylama
