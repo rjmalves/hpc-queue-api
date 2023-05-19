@@ -506,7 +506,9 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             }
             for idx, line in enumerate(lines):
                 if len(line) == 0:
-                    if jobId is not None:
+                    if jobId is not None and not any(
+                        [j.jobId == jobId for j in jobs]
+                    ):
                         jobs.append(
                             Job(
                                 jobId=str(jobId),
@@ -644,7 +646,9 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             }
             for idx, line in enumerate(lines):
                 if len(line) == 0:
-                    if jobId is not None:
+                    if jobId is not None and not any(
+                        [j.jobId == jobId for j in jobs]
+                    ):
                         jobs.append(
                             Job(
                                 jobId=str(jobId),
