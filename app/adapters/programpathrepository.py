@@ -95,8 +95,85 @@ class PEMAWSProgramPathRepository(AbstractProgramPathRepository):
         return newave + decomp
 
 
+class TuberProgramPathRepository(AbstractProgramPathRepository):
+    """
+    Implements the installation patter for managed programs
+    in the PEM AWS setup using the 'tuber' CLI tool.
+
+    The main premises are:
+        - A root path for all the managed programs
+        - A subfolder with each program name
+        - A second level of subfolders with the versions
+        - Each version containing an mpi_program*.job file
+    """
+
+    ROOT_PROGRAM_PATH = Path("/home/pem/versoes")
+    NEWAVE_PATH = ROOT_PROGRAM_PATH.joinpath("NEWAVE")
+    DECOMP_PATH = ROOT_PROGRAM_PATH.joinpath("DECOMP")
+    NEWAVE_TUBER_JOB = "/home/pem/rotinas/tuber/jobs/mpi_newave.job"
+    DECOMP_TUBER_JOB = "/home/pem/rotinas/tuber/jobs/mpi_decomp.job"
+
+    @classmethod
+    async def __list_program(
+        cls,
+        idPrefix: str,
+        programPath: Path,
+        name: str,
+        args: List[str],
+        execPattern: str,
+    ) -> Union[List[Program], HTTPResponse]:
+        programs: List[Program] = []
+        if not os.path.isdir(programPath):
+            return HTTPResponse(
+                code=500,
+                detail=f"program path not found: {cls.ROOT_PROGRAM_PATH}",
+            )
+        versions = os.listdir(programPath)
+        for i, v in enumerate(versions):
+            versionPath = programPath.joinpath(v)
+            if not versionPath.is_dir():
+                continue
+            execTuber = execPattern + " " + v
+            programs.append(
+                Program(
+                    programId=f"{idPrefix}{i}",
+                    name=name,
+                    clusterId=Settings.clusterId,
+                    version=v,
+                    installationDirectory=str(versionPath),
+                    isManaged=True,
+                    args=args,
+                    executablePath=str(execTuber),
+                )
+            )
+        return programs
+
+    @classmethod
+    async def __list_newave(cls) -> Union[List[Program], HTTPResponse]:
+        return await TuberProgramPathRepository.__list_program(
+            "NW", cls.NEWAVE_PATH, "NEWAVE", ["N_PROC"], cls.NEWAVE_TUBER_JOB
+        )
+
+    @classmethod
+    async def __list_decomp(cls) -> Union[List[Program], HTTPResponse]:
+        return await TuberProgramPathRepository.__list_program(
+            "DC", cls.DECOMP_PATH, "DECOMP", ["N_PROC"], cls.DECOMP_TUBER_JOB
+        )
+
+    @classmethod
+    async def list_programs(cls) -> Union[List[Program], HTTPResponse]:
+        newave = await cls.__list_newave()
+        if isinstance(newave, HTTPResponse):
+            return newave
+        decomp = await cls.__list_decomp()
+        if isinstance(decomp, HTTPResponse):
+            return decomp
+        return newave + decomp
+
+
 SUPPORTED_PATHS: Dict[str, Type[AbstractProgramPathRepository]] = {
-    "PEMAWS": PEMAWSProgramPathRepository
+    "PEMAWS": PEMAWSProgramPathRepository,
+    "TUBER": TuberProgramPathRepository,
 }
 DEFAULT = PEMAWSProgramPathRepository
 
