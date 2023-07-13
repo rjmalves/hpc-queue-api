@@ -133,7 +133,7 @@ class TuberProgramPathRepository(AbstractProgramPathRepository):
             versionPath = programPath.joinpath(v)
             if not versionPath.is_dir():
                 continue
-            execTuber = execPattern + " " + v
+            execTuber = execPattern + " " + v[1:]
             programs.append(
                 Program(
                     programId=f"{idPrefix}{i}",
