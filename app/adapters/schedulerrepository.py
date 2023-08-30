@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Union, Type
-
+from os.path import isdir
 from app.internal.settings import Settings
 from app.internal.fs import set_directory
 from app.internal.httpresponse import HTTPResponse
@@ -873,6 +873,11 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             f"nodes={job.reservedSlots}",
             *args,
         ]
+        if not isdir(job.workingDirectory):
+            return HTTPResponse(
+                code=400,
+                detail=f"directory {job.workingDirectory} does not exist",
+            )
         with set_directory(job.workingDirectory):
             cod, ans = await run_terminal_retry(command)
         if cod != 0:
