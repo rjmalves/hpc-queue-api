@@ -413,6 +413,11 @@ class SGESchedulerRepository(AbstractSchedulerRepository):
             job.scriptFile,
             *args,
         ]
+        if not isdir(job.workingDirectory):
+            return HTTPResponse(
+                code=400,
+                detail=f"directory {job.workingDirectory} does not exist",
+            )
         with set_directory(job.workingDirectory):
             cod, ans = await run_terminal_retry(command)
         if cod != 0:

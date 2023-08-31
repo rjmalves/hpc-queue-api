@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import time
 
 
 class set_directory:
@@ -10,9 +11,11 @@ class set_directory:
 
     def __init__(self, path: str):
         self.path = Path(path)
-        self.origin = Path().absolute()
+        self.origin = os.getenv("APP_INSTALLDIR")
 
     def __enter__(self):
+        if not self.path.exists():
+            time.sleep(5.)
         os.chdir(self.path)
 
     def __exit__(self, *args, **kwargs):
