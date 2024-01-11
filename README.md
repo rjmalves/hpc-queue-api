@@ -75,7 +75,6 @@ Maiores detalhes sobre as rotas disponíveis na API pode ser visto ao lançar a 
 1. Job
 
 ```json
-[
   {
     "jobId": "string",
     "status": "START_REQUESTED",
@@ -100,13 +99,11 @@ Maiores detalhes sobre as rotas disponíveis na API pode ser visto ao lançar a 
       "timeInstant": "2024-01-08T17:25:16.629Z"
     }
   }
-]
 ```
 
 2. Program
 
 ```json
-[
   {
     "programId": "string",
     "name": "string",
@@ -119,7 +116,6 @@ Maiores detalhes sobre as rotas disponíveis na API pode ser visto ao lançar a 
       "string"
     ]
   }
-]
 ```
 
 
