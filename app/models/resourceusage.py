@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 
+
 # SGE:
 # Uso de CPU, MEM e IO:
 # - CPU: valores acumulados em segundos

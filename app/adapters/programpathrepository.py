@@ -51,7 +51,7 @@ class PEMAWSProgramPathRepository(AbstractProgramPathRepository):
         versions = os.listdir(programPath)
         for i, v in enumerate(versions):
             versionPath = programPath.joinpath(v)
-            if not versionPath.is_dir():
+            if not os.path.isdir(versionPath):
                 continue
             execFiles = [
                 f for f in os.listdir(versionPath) if execPattern in f
@@ -131,7 +131,7 @@ class TuberProgramPathRepository(AbstractProgramPathRepository):
         versions = os.listdir(programPath)
         for i, v in enumerate(versions):
             versionPath = programPath.joinpath(v)
-            if not versionPath.is_dir():
+            if not os.path.isdir(str(versionPath)):
                 continue
             execTuber = execPattern + " " + v
             programs.append(
@@ -171,7 +171,7 @@ class TuberProgramPathRepository(AbstractProgramPathRepository):
         return newave + decomp
 
 
-class TestProgramPathRepository(ABC):
+class TestProgramPathRepository(AbstractProgramPathRepository):
     """ """
 
     @classmethod

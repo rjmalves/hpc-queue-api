@@ -977,19 +977,19 @@ class TestSchedulerRepository(AbstractSchedulerRepository):
     @staticmethod
     async def stop_job(jobId: str) -> Union[Job, HTTPResponse]:
         return Job(
-                jobId=jobId,
-                status=JobStatus.STOPPING,
-                name="teste",
-                startTime=datetime(2024, 1, 1),
-                lastStatusUpdateTime=datetime(2024, 1, 1),
-                endTime=None,
-                clusterId=Settings.clusterId,
-                workingDirectory="/tmp",
-                reservedSlots=64,
-                scriptFile="/tmp/job.sh",
-                args=None,
-                resourceUsage=None,
-            )
+            jobId=jobId,
+            status=JobStatus.STOPPING,
+            name="teste",
+            startTime=datetime(2024, 1, 1),
+            lastStatusUpdateTime=datetime(2024, 1, 1),
+            endTime=None,
+            clusterId=Settings.clusterId,
+            workingDirectory="/tmp",
+            reservedSlots=64,
+            scriptFile="/tmp/job.sh",
+            args=None,
+            resourceUsage=None,
+        )
 
 
 SUPPORTED_SCHEDULERS: Dict[str, Type[AbstractSchedulerRepository]] = {

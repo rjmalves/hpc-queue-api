@@ -110,51 +110,51 @@ async def test_sge_get_finished_job(mocker):
     assert r.resourceUsage.maxTotalMemory == maxMem
 
 
-# @pytest.mark.asyncio
-# async def test_sge_submit_job(mocker):
-#     repo = factory("SGE")
-#     mock = AsyncMock(return_value=(0, "".join(MockTORQUESubmitJob)))
-#     mocker.patch(
-#         "app.adapters.schedulerrepository.run_terminal_retry", side_effect=mock
-#     )
-#     jobId = "90169"
-#     name = "test"
-#     scriptFile = "test.job"
-#     reservedSlots = 16
-#     jobWorkingDirectory = "/home"
-#     r = await repo.submit_job(
-#         Job(
-#             name=name,
-#             reservedSlots=reservedSlots,
-#             scriptFile=scriptFile,
-#             workingDirectory=jobWorkingDirectory,
-#             clusterId=1,
-#             args=[],
-#         )
-#     )
-#     mock.assert_called_once()
-#     assert isinstance(r, Job)
-#     assert r.jobId == jobId
-#     assert r.name == name
-#     assert r.scriptFile == scriptFile
-#     assert r.reservedSlots == reservedSlots
-#     assert r.workingDirectory == jobWorkingDirectory
+@pytest.mark.asyncio
+async def test_sge_submit_job(mocker):
+    repo = factory("SGE")
+    mock = AsyncMock(return_value=(0, "".join(MockSGESubmitJob)))
+    mocker.patch(
+        "app.adapters.schedulerrepository.run_terminal_retry", side_effect=mock
+    )
+    jobId = "1488"
+    name = "NEWAVE-v28.16.4_micropen"
+    scriptFile = "test.job"
+    reservedSlots = 16
+    jobWorkingDirectory = "/home"
+    r = await repo.submit_job(
+        Job(
+            name=name,
+            reservedSlots=reservedSlots,
+            scriptFile=scriptFile,
+            workingDirectory=jobWorkingDirectory,
+            clusterId=1,
+            args=[],
+        )
+    )
+    mock.assert_called_once()
+    assert isinstance(r, Job)
+    assert r.jobId == jobId
+    assert r.name == name
+    assert r.scriptFile == scriptFile
+    assert r.reservedSlots == reservedSlots
+    assert r.workingDirectory == jobWorkingDirectory
 
 
-# @pytest.mark.asyncio
-# async def test_sge_stop_job(mocker):
-#     repo = factory("SGE")
-#     mock = AsyncMock(return_value=(0, MockTORQUEDeleteJob))
-#     mocker.patch(
-#         "app.adapters.schedulerrepository.run_terminal_retry", side_effect=mock
-#     )
-#     jobId = "90169"
-#     r = await repo.stop_job(
-#         jobId,
-#     )
-#     mock.assert_called_once()
-#     assert isinstance(r, Job)
-#     assert r.jobId == jobId
+@pytest.mark.asyncio
+async def test_sge_stop_job(mocker):
+    repo = factory("SGE")
+    mock = AsyncMock(return_value=(0, MockSGEDeleteJob))
+    mocker.patch(
+        "app.adapters.schedulerrepository.run_terminal_retry", side_effect=mock
+    )
+    jobId = "90169"
+    r = await repo.stop_job(
+        jobId,
+    )
+    mock.assert_called_once()
+    assert isinstance(r, Job)
+    assert r.jobId == jobId
 
 
 @pytest.mark.asyncio

@@ -1012,6 +1012,8 @@ MockSGEGetJobDone = [
     "arid         undefined\n",
 ]
 
-MockSGESubmitJob = ["90169.prd-cluster-01.ons.org.br\n"]
+MockSGESubmitJob = [
+    "Your job 1488 (NEWAVE-v28.16.4_micropen) has been submitted\n"
+]
 
-MockSGEDeleteJob = [""]
+MockSGEDeleteJob = ["Job 1488 registered for deletion\n"]
