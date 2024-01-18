@@ -171,9 +171,39 @@ class TuberProgramPathRepository(AbstractProgramPathRepository):
         return newave + decomp
 
 
+class TestProgramPathRepository(ABC):
+    """ """
+
+    @classmethod
+    async def list_programs(cls) -> Union[List[Program], HTTPResponse]:
+        return [
+            Program(
+                programId="NW1",
+                name="NEWAVE",
+                clusterId="0",
+                version="29",
+                installationDirectory="/tmp/NEWAVE/v29",
+                isManaged=True,
+                executablePath="/tmp/NEWAVE/v29/mpi_newave",
+                args=["N_PROC"],
+            ),
+            Program(
+                programId="DC1",
+                name="DECOMP",
+                clusterId="0",
+                version="29",
+                installationDirectory="/tmp/DECOMP/v32",
+                isManaged=True,
+                executablePath="/tmp/DECOMP/v32/mpi_decomp",
+                args=["N_PROC"],
+            ),
+        ]
+
+
 SUPPORTED_PATHS: Dict[str, Type[AbstractProgramPathRepository]] = {
     "PEMAWS": PEMAWSProgramPathRepository,
     "TUBER": TuberProgramPathRepository,
+    "TEST": TestProgramPathRepository,
 }
 DEFAULT = PEMAWSProgramPathRepository
 
