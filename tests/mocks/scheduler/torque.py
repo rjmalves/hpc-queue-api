@@ -1,4 +1,4 @@
-MockListJobs = [
+MockTORQUEListJobs = [
     "Job Id: 90137.prd-cluster-01.ons.org.br\n",
     "    Job_Name = newave\n",
     "    Job_Owner = gpo2@prd-cluster-01.ons.org.br\n",
@@ -137,7 +137,7 @@ MockListJobs = [
     "    request_version = 1\n",
 ]
 
-MockGetJobRunning = [
+MockTORQUEGetJobRunning = [
     "Job Id: 87849.prd-cluster-01.ons.org.br\n",
     "    Job_Name = newave\n",
     "    Job_Owner = gmc2@prd-cluster-01.ons.org.br\n",
@@ -240,7 +240,7 @@ MockGetJobRunning = [
     "\n",
 ]
 
-MockGetJobDone = [
+MockTORQUEGetJobDone = [
     "\n",
     "Job: 87849.prd-cluster-01.ons.org.br\n",
     "\n",
@@ -256,6 +256,6 @@ MockGetJobDone = [
     "",
 ]
 
-MockSubmitJob = ["90169.prd-cluster-01.ons.org.br\n"]
+MockTORQUESubmitJob = ["90169.prd-cluster-01.ons.org.br\n"]
 
-MockDeleteJob = [""]
+MockTORQUEDeleteJob = [""]

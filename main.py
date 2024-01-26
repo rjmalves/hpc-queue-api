@@ -2,9 +2,8 @@ from dotenv import load_dotenv
 import uvicorn
 import os
 import pathlib
-from fastapi import FastAPI
-from app.routers import jobs, programs
 from app.internal.settings import Settings
+from app.app import make_app
 
 BASEDIR = pathlib.Path().resolve()
 os.environ["APP_INSTALLDIR"] = os.path.dirname(os.path.abspath(__file__))
@@ -13,11 +12,8 @@ load_dotenv(
     override=True,
 )
 Settings.read_environments()
+app = make_app(root_path=Settings.root_path)
 
-app = FastAPI(root_path=Settings.root_path)
-
-app.include_router(jobs.router)
-app.include_router(programs.router)
 
 if __name__ == "__main__":
     uvicorn.run(

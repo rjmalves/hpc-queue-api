@@ -521,11 +521,12 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                                 status=status,
                                 startTime=startTime,
                                 lastStatusUpdateTime=datetime.now(),
+                                endTime=None,
                                 clusterId=Settings.clusterId,
                                 workingDirectory=workingDirectory,
                                 reservedSlots=int(reservedSlots),
                                 scriptFile=scriptFile,
-                                jobArgs=jobArgs,
+                                args=jobArgs,
                                 resourceUsage=ResourceUsage(
                                     cpuSeconds=resources["cput"],
                                     memoryCpuSeconds=resources["cput"]
@@ -661,11 +662,12 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                                 status=status,
                                 startTime=startTime,
                                 lastStatusUpdateTime=datetime.now(),
+                                endTime=None,
                                 clusterId=Settings.clusterId,
                                 workingDirectory=workingDirectory,
                                 reservedSlots=int(reservedSlots),
                                 scriptFile=scriptFile,
-                                jobArgs=jobArgs,
+                                args=jobArgs,
                                 resourceUsage=ResourceUsage(
                                     cpuSeconds=resources["cput"],
                                     memoryCpuSeconds=resources["cput"]
@@ -919,9 +921,93 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             )
 
 
+class TestSchedulerRepository(AbstractSchedulerRepository):
+    @staticmethod
+    async def list_jobs() -> Union[List[Job], HTTPResponse]:
+        return [
+            Job(
+                jobId="1",
+                status=JobStatus.STARTING,
+                name="teste",
+                startTime=datetime(2024, 1, 1),
+                lastStatusUpdateTime=datetime(2024, 1, 1),
+                endTime=None,
+                clusterId=Settings.clusterId,
+                workingDirectory="/tmp",
+                reservedSlots=64,
+                scriptFile="/tmp/job.sh",
+                args=None,
+                resourceUsage=None,
+            )
+        ]
+
+    @staticmethod
+    async def get_job(jobId: str) -> Union[Job, HTTPResponse]:
+        if jobId == "1":
+            return Job(
+                jobId="1",
+                status=JobStatus.STARTING,
+                name="teste",
+                startTime=datetime(2024, 1, 1),
+                lastStatusUpdateTime=datetime(2024, 1, 1),
+                endTime=None,
+                clusterId=Settings.clusterId,
+                workingDirectory="/tmp",
+                reservedSlots=64,
+                scriptFile="/tmp/job.sh",
+                args=None,
+                resourceUsage=None,
+            )
+        else:
+            return HTTPResponse(code=404, detail=f"job {jobId} not found")
+
+    @staticmethod
+    async def get_finished_job(jobId: str) -> Union[Job, HTTPResponse]:
+        if jobId == "2":
+            return Job(
+                jobId="2",
+                status=JobStatus.STOPPED,
+                name="teste",
+                startTime=datetime(2024, 1, 1),
+                lastStatusUpdateTime=datetime(2024, 1, 1),
+                endTime=None,
+                clusterId=Settings.clusterId,
+                workingDirectory="/tmp",
+                reservedSlots=64,
+                scriptFile="/tmp/job.sh",
+                args=None,
+                resourceUsage=None,
+            )
+        else:
+            return HTTPResponse(code=404, detail=f"job {jobId} not found")
+
+    @staticmethod
+    async def submit_job(job: Job) -> Union[Job, HTTPResponse]:
+        job.jobId = "3"
+        return job
+
+    @staticmethod
+    async def stop_job(jobId: str) -> Union[Job, HTTPResponse]:
+        return Job(
+            jobId=jobId,
+            status=JobStatus.STOPPING,
+            name="teste",
+            startTime=datetime(2024, 1, 1),
+            lastStatusUpdateTime=datetime(2024, 1, 1),
+            endTime=None,
+            clusterId=Settings.clusterId,
+            workingDirectory="/tmp",
+            reservedSlots=64,
+            scriptFile="/tmp/job.sh",
+            args=None,
+            resourceUsage=None,
+        )
+
+
 SUPPORTED_SCHEDULERS: Dict[str, Type[AbstractSchedulerRepository]] = {
     "SGE": SGESchedulerRepository,
     "TORQUE": TorqueSchedulerRepository,
+    "TEST": TestSchedulerRepository,
 }
 DEFAULT = SGESchedulerRepository
 
