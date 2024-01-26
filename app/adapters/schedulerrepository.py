@@ -516,11 +516,12 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                                 status=status,
                                 startTime=startTime,
                                 lastStatusUpdateTime=datetime.now(),
+                                endTime=None,
                                 clusterId=Settings.clusterId,
                                 workingDirectory=workingDirectory,
                                 reservedSlots=int(reservedSlots),
                                 scriptFile=scriptFile,
-                                jobArgs=jobArgs,
+                                args=jobArgs,
                                 resourceUsage=ResourceUsage(
                                     cpuSeconds=resources["cput"],
                                     memoryCpuSeconds=resources["cput"]
@@ -656,11 +657,12 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
                                 status=status,
                                 startTime=startTime,
                                 lastStatusUpdateTime=datetime.now(),
+                                endTime=None,
                                 clusterId=Settings.clusterId,
                                 workingDirectory=workingDirectory,
                                 reservedSlots=int(reservedSlots),
                                 scriptFile=scriptFile,
-                                jobArgs=jobArgs,
+                                args=jobArgs,
                                 resourceUsage=ResourceUsage(
                                     cpuSeconds=resources["cput"],
                                     memoryCpuSeconds=resources["cput"]

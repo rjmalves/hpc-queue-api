@@ -124,12 +124,18 @@ async def test_sge_submit_job(mocker):
     jobWorkingDirectory = "/home"
     r = await repo.submit_job(
         Job(
+            jobId=None,
             name=name,
+            status=JobStatus.START_REQUESTED,
+            startTime=None,
+            lastStatusUpdateTime=None,
+            endTime=None,
             reservedSlots=reservedSlots,
             scriptFile=scriptFile,
             workingDirectory=jobWorkingDirectory,
-            clusterId=1,
+            clusterId="1",
             args=[],
+            resourceUsage=None,
         )
     )
     mock.assert_called_once()
@@ -272,12 +278,18 @@ async def test_torque_submit_job(mocker):
     jobWorkingDirectory = "/home"
     r = await repo.submit_job(
         Job(
+            jobId=None,
             name=name,
+            status=None,
+            startTime=None,
+            lastStatusUpdateTime=None,
+            endTime=None,
             reservedSlots=reservedSlots,
             scriptFile=scriptFile,
             workingDirectory=jobWorkingDirectory,
-            clusterId=1,
+            clusterId="1",
             args=[],
+            resourceUsage=None,
         )
     )
     mock.assert_called_once()

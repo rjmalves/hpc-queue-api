@@ -1,8 +1,7 @@
-from app.app import make_app
+from app.routers.programs import router
 from fastapi.testclient import TestClient
 
-app = make_app()
-client = TestClient(app)
+client = TestClient(router)
 
 
 def test_get_programs():

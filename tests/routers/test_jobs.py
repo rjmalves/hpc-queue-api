@@ -1,8 +1,9 @@
-from app.app import make_app
+from app.routers.jobs import router
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
+import pytest
 
-app = make_app()
-client = TestClient(app)
+client = TestClient(router)
 
 
 def test_get_jobs():
@@ -12,8 +13,9 @@ def test_get_jobs():
 
 
 def test_get_job_not_found():
-    response = client.get("/jobs/0")
-    assert response.status_code == 404
+    with pytest.raises(HTTPException):
+        response = client.get("/jobs/0")
+        assert response.status_code == 404
 
 
 def test_get_job_running():
@@ -52,12 +54,18 @@ def test_get_job_finished():
 
 def test_post_job():
     job = {
+        "jobId": None,
+        "status": None,
         "name": "teste",
+        "startTime": None,
+        "lastStatusUpdateTime": None,
+        "endTime": None,
         "clusterId": "0",
         "workingDirectory": "/tmp",
         "reservedSlots": 64,
         "scriptFile": "/tmp/job.sh",
-        "args": [64],
+        "args": ["64"],
+        "resourceUsage": None,
     }
     response = client.post("/jobs/", json=job)
     assert response.status_code == 201
