@@ -103,7 +103,7 @@ async def test_tuber_list_programs(mocker):
             version="v29",
             installationDirectory="/home/pem/versoes/NEWAVE/v29",
             isManaged=True,
-            executablePath=repo.NEWAVE_TUBER_JOB + " " + "v29",
+            executablePath=repo.NEWAVE_TUBER_JOB + " " + "29",
             args=["N_PROC"],
         ),
         Program(
@@ -113,7 +113,7 @@ async def test_tuber_list_programs(mocker):
             version="v31.21",
             installationDirectory="/home/pem/versoes/DECOMP/v31.21",
             isManaged=True,
-            executablePath=repo.DECOMP_TUBER_JOB + " " + "v31.21",
+            executablePath=repo.DECOMP_TUBER_JOB + " " + "31.21",
             args=["N_PROC"],
         ),
     ]
