@@ -178,7 +178,7 @@ class TuberProgramPathRepository(AbstractProgramPathRepository):
                     installationDirectory=str(versionPath),
                     isManaged=True,
                     args=args,
-                    executablePath=execTuber,  # TODO - fix
+                    executablePath=execTuber,
                 )
             )
         return programs
