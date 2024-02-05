@@ -9,6 +9,7 @@ from app.internal.httpresponse import HTTPResponse
 from app.models.job import Job, JobStatus
 from app.models.resourceusage import ResourceUsage
 from app.internal.terminal import run_terminal_retry
+from app.utils.taskscheduler import TaskScheduler
 import xml.etree.ElementTree as ET
 
 
@@ -921,6 +922,57 @@ class TorqueSchedulerRepository(AbstractSchedulerRepository):
             )
 
 
+class InternalSchedulerRepository(AbstractSchedulerRepository):
+    """ """
+
+    @staticmethod
+    async def list_jobs() -> Union[List[Job], HTTPResponse]:
+        internal_scheduler = TaskScheduler()
+        tasks = internal_scheduler.tasks()
+        internal_jobs = internal_scheduler.jobs()
+        jobs: List[Job] = []
+        for id, _ in tasks.items():
+            job = internal_jobs[id]
+            job.lastStatusUpdateTime = datetime.now()
+            jobs.append(job)
+        return jobs
+
+    @staticmethod
+    async def get_job(jobId: str) -> Union[Job, HTTPResponse]:
+        internal_scheduler = TaskScheduler()
+        tasks = internal_scheduler.tasks()
+        internal_jobs = internal_scheduler.jobs()
+        if jobId in tasks:
+            job = internal_jobs[jobId]
+            job.lastStatusUpdateTime = datetime.now()
+            return job
+        else:
+            return HTTPResponse(code=404, detail=f"job {jobId} not found")
+
+    @staticmethod
+    async def get_finished_job(jobId: str) -> Union[Job, HTTPResponse]:
+        internal_scheduler = TaskScheduler()
+        tasks = internal_scheduler.tasks()
+        internal_jobs = internal_scheduler.jobs()
+        if jobId not in tasks and jobId in internal_jobs:
+            job = internal_jobs[jobId]
+            return job
+        elif jobId not in tasks and jobId not in internal_jobs:
+            return HTTPResponse(code=404, detail=f"job {jobId} not found")
+        else:
+            raise RuntimeError("job is not finished")
+
+    @staticmethod
+    async def submit_job(job: Job) -> Union[Job, HTTPResponse]:
+        internal_scheduler = TaskScheduler()
+        internal_scheduler.schedule_task(job)
+        return job
+
+    @staticmethod
+    async def stop_job(jobId: str) -> Union[Job, HTTPResponse]:
+        raise NotImplementedError("stop_job not implemented")
+
+
 class TestSchedulerRepository(AbstractSchedulerRepository):
     @staticmethod
     async def list_jobs() -> Union[List[Job], HTTPResponse]:
@@ -1007,6 +1059,7 @@ class TestSchedulerRepository(AbstractSchedulerRepository):
 SUPPORTED_SCHEDULERS: Dict[str, Type[AbstractSchedulerRepository]] = {
     "SGE": SGESchedulerRepository,
     "TORQUE": TorqueSchedulerRepository,
+    "INTERNAL": InternalSchedulerRepository,
     "TEST": TestSchedulerRepository,
 }
 DEFAULT = SGESchedulerRepository
