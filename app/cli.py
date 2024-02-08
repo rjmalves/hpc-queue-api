@@ -3,6 +3,10 @@ import requests
 import pandas as pd
 from tabulate import tabulate
 from app.internal.settings import Settings
+from app.models.job import Job
+from app.models.jobstatus import JobStatus
+from os import curdir
+from pathlib import Path
 
 
 @click.group()
@@ -51,26 +55,57 @@ def list_jobs():
     print(tabulate(df, headers="keys", showindex=False))
 
 
-# @click.command("submit-job")
-# def submit_job():
-#     """
-#     List jobs running and waiting in the HPC queue.
-#     """
-#     # Obter URL em que a API está hospedada
-#     url = f"http://localhost:{Settings.port}/{Settings.root_path}jobs/"
-#     # Fazer requisição para a rota de listar jobs
-#     res = requests.get(url)
-#     # Obter resultado e imprimir na tela
-#     # Tabela com
-#     # ID | Nome | Status | Instante de criação | Slots
-#     jobs = res.json()
-#     df = pd.DataFrame.from_records(jobs)[
-#         ["jobId", "name", "status", "startTime", "reservedSlots"]
-#     ]
-#     df["startTime"] = pd.to_datetime(df["startTime"])
-#     df["startTime"] = df["startTime"].dt.strftime("%H:%M:%S %d-%m-%Y")
-#     df["startTime"] = df["startTime"].fillna("")
-#     print(tabulate(df, headers="keys", showindex=False))
+@click.command("submit-job")
+@click.argument(
+    "scriptFile",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        readable=True,
+        executable=True,
+        resolve_path=True,
+    ),
+)
+@click.argument(
+    "reservedSlots",
+    type=int,
+)
+@click.option("--name", default=None, help="name for the job")
+@click.option("--workdir", default=None, help="working directory for the job")
+def submit_job(scriptFile, reservedSlots, name, workdir):
+    """
+    Submit jobs in the HPC queue.
+    """
+    if reservedSlots <= 0:
+        raise ValueError("reservedSlots <= 0")
+    if workdir is None:
+        workdir = str(Path(curdir).resolve())
+    if name is None:
+        name = Path(workdir).parts[-1]
+
+    url = f"http://localhost:{Settings.port}/{Settings.root_path}jobs/"
+    args = []
+    job = Job(
+        jobId=None,
+        status=None,
+        name=name,
+        startTime=None,
+        lastStatusUpdateTime=None,
+        endTime=None,
+        clusterId=Settings.clusterId,
+        workingDirectory=workdir,
+        reservedSlots=reservedSlots,
+        scriptFile=str(scriptFile),
+        args=args,
+        resourceUsage=None,
+    )
+    res = requests.post(url, json=job.model_dump_json())
+
+    if res.status_code != 201:
+        raise RuntimeError(res)
+
+    content = res.json()
+    print(f"Your job {name} ({content['jobId']}) was submitted.")
 
 
 cli.add_command(list_jobs)
