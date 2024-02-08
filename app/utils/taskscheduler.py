@@ -63,7 +63,9 @@ class TaskScheduler(metaclass=Singleton):
                 await asyncio.sleep(5)
             cls.jobs()[job.jobId].status = JobStatus.RUNNING
             cls.jobs()[job.jobId].startTime = datetime.now()
-            await run_terminal_retry([job.scriptFile], timeout=timeout)
+            await run_terminal_retry(
+                [job.scriptFile] + job.args, timeout=timeout
+            )
 
         taskids = [int(i) for i in list(cls.jobs().keys())]
         if len(taskids) == 0:
