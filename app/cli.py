@@ -18,7 +18,8 @@ def cli():
 
 
 @click.command("list-jobs")
-def list_jobs():
+@click.option("-j", "--jobid", default=None, help="id for the job")
+def list_jobs(jobid):
     """
     List jobs running and waiting in the HPC queue.
     """
@@ -32,32 +33,38 @@ def list_jobs():
             return "..." + path[-max_path_size:]
         return path
 
-    url = f"http://localhost:{Settings.port}/{Settings.root_path}jobs/"
-    res = requests.get(url)
-    jobs = res.json()
-    df = pd.DataFrame.from_records(jobs)
-    if not df.empty:
-        df = df[
-            [
-                "jobId",
-                "name",
-                "status",
-                "startTime",
-                "reservedSlots",
-                "workingDirectory",
+    if jobid is None:
+        url = f"http://localhost:{Settings.port}/{Settings.root_path}jobs/"
+        res = requests.get(url)
+        jobs = res.json()
+        df = pd.DataFrame.from_records(jobs)
+        if not df.empty:
+            df = df[
+                [
+                    "jobId",
+                    "name",
+                    "status",
+                    "startTime",
+                    "reservedSlots",
+                    "workingDirectory",
+                ]
             ]
-        ]
-        df = df.rename(columns={"jobId": "id", "reservedSlots": "slots"})
-        df["startTime"] = pd.to_datetime(df["startTime"])
-        df["startTime"] = df["startTime"].dt.strftime("%H:%M:%S %d-%m-%Y")
-        df["startTime"] = df["startTime"].fillna("")
-        df["workingDirectory"] = df["workingDirectory"].apply(__trim_path)
-    print(tabulate(df, headers="keys", showindex=False))
+            df = df.rename(columns={"jobId": "id", "reservedSlots": "slots"})
+            df["startTime"] = pd.to_datetime(df["startTime"])
+            df["startTime"] = df["startTime"].dt.strftime("%H:%M:%S %d-%m-%Y")
+            df["startTime"] = df["startTime"].fillna("")
+            df["workingDirectory"] = df["workingDirectory"].apply(__trim_path)
+        print(tabulate(df, headers="keys", showindex=False))
+    else:
+        url = f"http://localhost:{Settings.port}/{Settings.root_path}jobs/{jobid}"
+        res = requests.get(url)
+        jobs = res.json()
+        print(jobs)
 
 
 @click.command("submit-job")
 @click.argument(
-    "scriptFile",
+    "scriptfile",
     type=click.Path(
         exists=True,
         file_okay=True,
@@ -67,24 +74,29 @@ def list_jobs():
     ),
 )
 @click.argument(
-    "reservedSlots",
+    "slots",
     type=int,
 )
-@click.option("--name", default=None, help="name for the job")
-@click.option("--workdir", default=None, help="working directory for the job")
-def submit_job(scriptFile, reservedSlots, name, workdir):
+@click.argument(
+    "args",
+    nargs=-1,
+)
+@click.option("-n", "--name", default=None, help="name for the job")
+@click.option(
+    "-wd", "--workdir", default=None, help="working directory for the job"
+)
+def submit_job(scriptfile, slots, args, name, workdir):
     """
     Submit jobs in the HPC queue.
     """
-    if reservedSlots <= 0:
-        raise ValueError("reservedSlots <= 0")
+    if slots <= 0:
+        raise ValueError("slots <= 0")
     if workdir is None:
         workdir = str(Path(curdir).resolve())
     if name is None:
         name = Path(workdir).parts[-1]
 
     url = f"http://localhost:{Settings.port}/{Settings.root_path}jobs/"
-    args = []
     job = Job(
         jobId=None,
         status=None,
@@ -94,18 +106,42 @@ def submit_job(scriptFile, reservedSlots, name, workdir):
         endTime=None,
         clusterId=Settings.clusterId,
         workingDirectory=workdir,
-        reservedSlots=reservedSlots,
-        scriptFile=str(scriptFile),
-        args=args,
+        reservedSlots=slots,
+        scriptFile=str(scriptfile),
+        args=list(args),
         resourceUsage=None,
     )
-    res = requests.post(url, json=job.model_dump_json())
+    res = requests.post(url, json=job.model_dump())
 
     if res.status_code != 201:
-        raise RuntimeError(res)
+        raise RuntimeError(res.json())
 
     content = res.json()
     print(f"Your job {name} ({content['jobId']}) was submitted.")
 
 
+@click.command("delete-job")
+@click.argument(
+    "jobid",
+    type=int,
+)
+def delete_job(jobid):
+    """
+    Delete jobs in the HPC queue.
+    """
+
+    url = f"http://localhost:{Settings.port}/{Settings.root_path}jobs/{jobid}"
+    res = requests.delete(url)
+
+    if res.status_code != 202:
+        print(res)
+        raise RuntimeError(res.json())
+
+    content = res.json()
+    jobId = content["detail"].split("jobId:")[1].strip()
+    print(f"Your job ({jobId}) was deleted.")
+
+
 cli.add_command(list_jobs)
+cli.add_command(submit_job)
+cli.add_command(delete_job)

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+INTERPRETER=/home/rogerio/git/hpc-queue-api/venv/bin/python3
+CLI=/home/rogerio/git/hpc-queue-api/cli.py
+
+$INTERPRETER $CLI list-jobs $@

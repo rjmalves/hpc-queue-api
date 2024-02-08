@@ -1,11 +1,10 @@
 import asyncio
-from typing import Dict, Any
+from typing import Dict, Any, List
 from os import chdir
 from datetime import datetime
 from app.models.job import Job
 from app.models.jobstatus import JobStatus
 from app.utils.singleton import Singleton
-from app.internal.terminal import run_terminal_retry
 from app.internal.settings import Settings
 
 
@@ -45,6 +44,23 @@ class TaskScheduler(metaclass=Singleton):
 
     @classmethod
     def schedule_task(cls, job: Job):
+
+        async def _cmd(
+            command: str, args: List[str], outfile: str, errfile: str
+        ) -> None:
+            try:
+                with open(outfile, "w") as outfile:
+                    with open(errfile, "w") as errfile:
+                        proc = await asyncio.create_subprocess_exec(
+                            command,
+                            args,
+                            stdout=outfile,
+                            stderr=errfile,
+                        )
+                        await proc.communicate()
+            except asyncio.CancelledError:
+                proc.terminate()
+
         async def task(job: Job) -> None:
             if not job.workingDirectory:
                 raise ValueError("Working directory is not set.")
@@ -55,17 +71,24 @@ class TaskScheduler(metaclass=Singleton):
             if not job.scriptFile:
                 raise ValueError("Script file is not set.")
             chdir(job.workingDirectory)
-            timeout = 60 * 60 * 24 * 7  # 7 days
+            timeout = 60 * 60 * 24 * 7
             cls.jobs()[job.jobId].status = JobStatus.START_REQUESTED
-            while True:
-                if cls.free_slots() >= job.reservedSlots:
-                    break
-                await asyncio.sleep(5)
-            cls.jobs()[job.jobId].status = JobStatus.RUNNING
-            cls.jobs()[job.jobId].startTime = datetime.now()
-            await run_terminal_retry(
-                [job.scriptFile] + job.args, timeout=timeout
-            )
+            cls.jobs()[taskid].lastStatusUpdateTime = datetime.now()
+            try:
+                while True:
+                    if cls.free_slots() >= job.reservedSlots:
+                        break
+                    await asyncio.sleep(5)
+                cls.jobs()[job.jobId].status = JobStatus.RUNNING
+                cls.jobs()[job.jobId].startTime = datetime.now()
+                outfile = f"{job.name}.o{job.jobId}"
+                errfile = f"{job.name}.e{job.jobId}"
+                await asyncio.wait_for(
+                    _cmd(job.scriptFile, " ".join(job.args), outfile, errfile),
+                    timeout=timeout,
+                )
+            except asyncio.TimeoutError:
+                print(f"job timeout error: {job.jobId}")
 
         taskids = [int(i) for i in list(cls.jobs().keys())]
         if len(taskids) == 0:
@@ -77,3 +100,13 @@ class TaskScheduler(metaclass=Singleton):
         ref: asyncio.Task = asyncio.create_task(task(job), name=taskid)
         cls.tasks()[taskid] = ref
         ref.add_done_callback(cls._remove_from_dict_by_value)
+
+    @classmethod
+    def kill_task(cls, taskid: str) -> bool:
+        if taskid in cls.tasks():
+            cls.jobs()[taskid].status = JobStatus.STOP_REQUESTED
+            cls.jobs()[taskid].lastStatusUpdateTime = datetime.now()
+            res = cls.tasks()[taskid].cancel()
+            return res
+        else:
+            return False

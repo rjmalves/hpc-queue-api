@@ -970,7 +970,24 @@ class InternalSchedulerRepository(AbstractSchedulerRepository):
 
     @staticmethod
     async def stop_job(jobId: str) -> Union[Job, HTTPResponse]:
-        raise NotImplementedError("stop_job not implemented")
+        internal_scheduler = TaskScheduler()
+        if internal_scheduler.kill_task(jobId):
+            return Job(
+                jobId=jobId,
+                status=None,
+                name=None,
+                startTime=None,
+                lastStatusUpdateTime=None,
+                endTime=None,
+                clusterId=Settings.clusterId,
+                workingDirectory=None,
+                reservedSlots=None,
+                scriptFile=None,
+                args=None,
+                resourceUsage=None,
+            )
+        else:
+            return HTTPResponse(code=404, detail="error running qdel command")
 
 
 class TestSchedulerRepository(AbstractSchedulerRepository):
