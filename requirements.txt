@@ -1,2 +1,4 @@
 python-dotenv
 fastapi[all]
+pandas
+tabulate

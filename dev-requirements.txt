@@ -1,5 +1,7 @@
 python-dotenv
 fastapi[all]
+pandas
+tabulate
 pytest
 pytest-cov
 pytest-mock
