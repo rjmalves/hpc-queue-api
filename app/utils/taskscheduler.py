@@ -67,7 +67,7 @@ class TaskScheduler(metaclass=Singleton):
                 for _ in range(cls.MAX_KILL_RETRY):
                     await asyncio.sleep(1)
                     print(f"trying to kill process [{pid}]...")
-                    cod, ans = await run_terminal([f"kill -9 -P {pid}"])
+                    cod, ans = await run_terminal([f"pkill -9 -P {pid}"])
                     print(cod, ans)
                     # DESSEM only exits by doing this manually
                     if cod == 1:
