@@ -2,6 +2,7 @@ python-dotenv
 fastapi[all]
 pandas
 tabulate
+requests
 pytest
 pytest-cov
 pytest-mock

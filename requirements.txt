@@ -2,3 +2,4 @@ python-dotenv
 fastapi[all]
 pandas
 tabulate
+requests
