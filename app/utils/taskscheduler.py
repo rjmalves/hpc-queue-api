@@ -1,4 +1,5 @@
 import asyncio
+import signal
 from typing import Dict, Any, List
 from os import chdir
 from datetime import datetime
@@ -61,10 +62,12 @@ class TaskScheduler(metaclass=Singleton):
                         await proc.communicate()
             except asyncio.CancelledError:
                 for _ in range(cls.MAX_KILL_RETRY):
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(1)
                     try:
-                        proc.kill()
+                        print("trying to kill process...")
+                        proc.send_signal(signal.SIGKILL)
                     except ProcessLookupError:
+                        print("process killed!")
                         break
 
         async def task(job: Job) -> None:
