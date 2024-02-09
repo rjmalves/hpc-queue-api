@@ -7,6 +7,7 @@ from app.models.job import Job
 from app.models.jobstatus import JobStatus
 from app.utils.singleton import Singleton
 from app.internal.settings import Settings
+from app.internal.terminal import run_terminal
 
 
 class TaskScheduler(metaclass=Singleton):
@@ -61,13 +62,12 @@ class TaskScheduler(metaclass=Singleton):
                         )
                         await proc.communicate()
             except asyncio.CancelledError:
+                # DESSEM only exits by doing this manually
+                pid = proc.pid
                 for _ in range(cls.MAX_KILL_RETRY):
                     await asyncio.sleep(1)
-                    try:
-                        print("trying to kill process...")
-                        proc.send_signal(signal.SIGKILL)
-                    except ProcessLookupError:
-                        print("process killed!")
+                    cod, _ = await run_terminal([f"kill -9 {pid}"])
+                    if cod == 1:
                         break
 
         async def task(job: Job) -> None:
