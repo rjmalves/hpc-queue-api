@@ -61,6 +61,7 @@ class TaskScheduler(metaclass=Singleton):
                             stderr=errfile,
                         )
                         await proc.communicate()
+                        print(proc.pid)
             except asyncio.CancelledError:
                 pid = proc.pid
                 for _ in range(cls.MAX_KILL_RETRY):
