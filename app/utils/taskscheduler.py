@@ -59,7 +59,7 @@ class TaskScheduler(metaclass=Singleton):
                         )
                         await proc.communicate()
             except asyncio.CancelledError:
-                proc.terminate()
+                proc.kill()
 
         async def task(job: Job) -> None:
             if not job.workingDirectory:
