@@ -62,12 +62,15 @@ class TaskScheduler(metaclass=Singleton):
                         )
                         await proc.communicate()
             except asyncio.CancelledError:
-                # DESSEM only exits by doing this manually
                 pid = proc.pid
                 for _ in range(cls.MAX_KILL_RETRY):
                     await asyncio.sleep(1)
-                    cod, _ = await run_terminal([f"kill -9 {pid}"])
+                    print(f"trying to kill process [{pid}]...")
+                    cod, ans = await run_terminal([f"kill -9 {pid}"])
+                    print(cod, ans)
+                    # DESSEM only exits by doing this manually
                     if cod == 1:
+                        print("process killed!")
                         break
 
         async def task(job: Job) -> None:
