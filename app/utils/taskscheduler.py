@@ -48,6 +48,13 @@ class TaskScheduler(metaclass=Singleton):
     @classmethod
     def schedule_task(cls, job: Job):
 
+        async def _get_process(pid: int) -> int:
+            cod, ans = await run_terminal(
+                [f"ps -p {pid} -o command"], timeout=10
+            )
+            print(cod, ans)
+            return cod
+
         async def _cmd(
             command: str, args: List[str], outfile: str, errfile: str
         ) -> None:
@@ -68,6 +75,7 @@ class TaskScheduler(metaclass=Singleton):
                     await asyncio.sleep(1)
                     print(f"trying to kill process [{pid}]...")
                     cod, ans = await run_terminal([f"pkill -9 -P {pid}"])
+                    print(await _get_process(pid))
                     print(cod, ans)
                     # DESSEM only exits by doing this manually
                     if cod == 1:
