@@ -28,7 +28,7 @@ def list_jobs(jobid):
         """
         Trim the path to the last 30 characters.
         """
-        max_path_size = 20
+        max_path_size = 40
         if len(path) > max_path_size:
             return "..." + path[-max_path_size:]
         return path
