@@ -49,11 +49,9 @@ class TaskScheduler(metaclass=Singleton):
     def schedule_task(cls, job: Job):
 
         async def _get_process(pid: int) -> int:
-            cod, ans = await run_terminal(
+            cod, _ = await run_terminal(
                 [f"ps -p {pid} -o command"], timeout=10
             )
-            print("_get_process")
-            print(cod, ans)
             return cod
 
         async def _cmd(
@@ -69,19 +67,12 @@ class TaskScheduler(metaclass=Singleton):
                             stderr=errfile,
                         )
                         await proc.communicate()
-                        print(proc.pid)
             except asyncio.CancelledError:
                 pid = proc.pid
+                # DESSEM only exits by doing this manually
                 while await _get_process(pid) == 0:
                     await asyncio.sleep(1)
-                    print(f"trying to kill process [{pid}]...")
-                    cod, ans = await run_terminal([f"pkill -9 -P {pid}"])
-                    print("pkill")
-                    print(cod, ans)
-                    # DESSEM only exits by doing this manually
-                    if cod == 1:
-                        print("process killed!")
-                        break
+                    await run_terminal([f"pkill -9 -P {pid}"])
 
         async def task(job: Job) -> None:
             if not job.workingDirectory:
