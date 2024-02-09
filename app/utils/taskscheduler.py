@@ -12,6 +12,7 @@ class TaskScheduler(metaclass=Singleton):
     TASKS: Dict[str, asyncio.Task] = dict()
     JOBS: Dict[str, Job] = dict()
     MAX_SLOTS = Settings.max_slots
+    MAX_KILL_RETRY = 10
 
     @classmethod
     def tasks(cls) -> Dict[str, asyncio.Task]:
@@ -59,10 +60,12 @@ class TaskScheduler(metaclass=Singleton):
                         )
                         await proc.communicate()
             except asyncio.CancelledError:
-                for _ in range(3):
-                    asyncio.sleep(1)
-                    proc.terminate()
-                    proc.kill()
+                for _ in range(cls.MAX_KILL_RETRY):
+                    await asyncio.sleep(5)
+                    try:
+                        proc.kill()
+                    except ProcessLookupError:
+                        break
 
         async def task(job: Job) -> None:
             if not job.workingDirectory:
