@@ -52,6 +52,7 @@ class TaskScheduler(metaclass=Singleton):
             cod, ans = await run_terminal(
                 [f"ps -p {pid} -o command"], timeout=10
             )
+            print("_get_process")
             print(cod, ans)
             return cod
 
@@ -71,11 +72,11 @@ class TaskScheduler(metaclass=Singleton):
                         print(proc.pid)
             except asyncio.CancelledError:
                 pid = proc.pid
-                for _ in range(cls.MAX_KILL_RETRY):
+                while await _get_process(pid) == 0:
                     await asyncio.sleep(1)
                     print(f"trying to kill process [{pid}]...")
                     cod, ans = await run_terminal([f"pkill -9 -P {pid}"])
-                    print(await _get_process(pid))
+                    print("pkill")
                     print(cod, ans)
                     # DESSEM only exits by doing this manually
                     if cod == 1:
