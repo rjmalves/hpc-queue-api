@@ -62,7 +62,7 @@ class TaskScheduler(metaclass=Singleton):
                     with open(errfile, "w") as errfile:
                         proc = await asyncio.create_subprocess_exec(
                             command,
-                            args,
+                            *args,
                             stdout=outfile,
                             stderr=errfile,
                         )
@@ -97,7 +97,7 @@ class TaskScheduler(metaclass=Singleton):
                 outfile = f"{job.name}.o{job.jobId}"
                 errfile = f"{job.name}.e{job.jobId}"
                 await asyncio.wait_for(
-                    _cmd(job.scriptFile, " ".join(job.args), outfile, errfile),
+                    _cmd(job.scriptFile, job.args, outfile, errfile),
                     timeout=timeout,
                 )
             except asyncio.TimeoutError:

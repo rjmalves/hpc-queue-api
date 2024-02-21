@@ -108,7 +108,7 @@ def submit_job(scriptfile, slots, args, name, workdir):
         workingDirectory=workdir,
         reservedSlots=slots,
         scriptFile=str(scriptfile),
-        args=list(args),
+        args=args,
         resourceUsage=None,
     )
     res = requests.post(url, json=job.model_dump())
