@@ -1,5 +1,4 @@
 import asyncio
-import signal
 from typing import Dict, Any, List
 from os import chdir
 from datetime import datetime
@@ -55,8 +54,13 @@ class TaskScheduler(metaclass=Singleton):
             return cod
 
         async def _cmd(
-            command: str, args: List[str], outfile: str, errfile: str
+            command: str,
+            args: List[str],
+            workdir: str,
+            outfile: str,
+            errfile: str,
         ) -> None:
+            chdir(workdir)
             try:
                 with open(outfile, "w") as outfile:
                     with open(errfile, "w") as errfile:
@@ -74,6 +78,30 @@ class TaskScheduler(metaclass=Singleton):
                     await asyncio.sleep(1)
                     await run_terminal([f"pkill -9 -P {pid}"])
 
+        def _is_next(job: Job) -> bool:
+            # Checks if the job is the next in the queue
+            waiting_jobs = {
+                jobId: j
+                for jobId, j in cls.jobs().items()
+                if j.status == JobStatus.START_REQUESTED
+            }
+            # Checks if there are enough slots
+            waiting_jobs_with_enough_slots = {
+                jobId: j
+                for jobId, j in waiting_jobs.items()
+                if cls.free_slots() >= j.reservedSlots
+            }
+            # If the first submitted job, with enough slots, is the current
+            # job, then it is the next in the queue
+            sorted_waiting_jobs = sorted(
+                waiting_jobs_with_enough_slots.items(),
+                key=lambda x: x[1].lastStatusUpdateTime,
+            )
+            if len(sorted_waiting_jobs) == 0:
+                return False
+            else:
+                return list(sorted_waiting_jobs)[0][0] == job.jobId
+
         async def task(job: Job) -> None:
             if not job.workingDirectory:
                 raise ValueError("Working directory is not set.")
@@ -83,13 +111,13 @@ class TaskScheduler(metaclass=Singleton):
                 raise ValueError("Job ID is not set.")
             if not job.scriptFile:
                 raise ValueError("Script file is not set.")
-            chdir(job.workingDirectory)
+
             timeout = 60 * 60 * 24 * 7
             cls.jobs()[job.jobId].status = JobStatus.START_REQUESTED
             cls.jobs()[taskid].lastStatusUpdateTime = datetime.now()
             try:
                 while True:
-                    if cls.free_slots() >= job.reservedSlots:
+                    if _is_next(job):
                         break
                     await asyncio.sleep(5)
                 cls.jobs()[job.jobId].status = JobStatus.RUNNING
@@ -97,7 +125,13 @@ class TaskScheduler(metaclass=Singleton):
                 outfile = f"{job.name}.o{job.jobId}"
                 errfile = f"{job.name}.e{job.jobId}"
                 await asyncio.wait_for(
-                    _cmd(job.scriptFile, job.args, outfile, errfile),
+                    _cmd(
+                        job.scriptFile,
+                        job.args,
+                        job.workingDirectory,
+                        outfile,
+                        errfile,
+                    ),
                     timeout=timeout,
                 )
             except asyncio.TimeoutError:
