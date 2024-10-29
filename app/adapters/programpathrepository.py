@@ -111,9 +111,9 @@ class TuberProgramPathRepository(AbstractProgramPathRepository):
     NEWAVE_PATH = ROOT_PROGRAM_PATH.joinpath("NEWAVE")
     DECOMP_PATH = ROOT_PROGRAM_PATH.joinpath("DECOMP")
     DESSEM_PATH = Path("/home/SW/dessem")
-    NEWAVE_TUBER_JOB = "/home/pem/rotinas/tuber/jobs/mpi_newave.job"
-    DECOMP_TUBER_JOB = "/home/pem/rotinas/tuber/jobs/mpi_decomp.job"
-    DESSEM_TUBER_JOB = "/home/ESTUDO/PEM/git/tuber/jobs/dessem.sh"
+    NEWAVE_TUBER_JOB = "/home/pem/rotinas/hpc-model-utils/jobs/mpi_newave.job"
+    DECOMP_TUBER_JOB = "/home/pem/rotinas/hpc-model-utils/jobs/mpi_decomp.job"
+    DESSEM_TUBER_JOB = "/home/ESTUDO/PEM/git/hpc-model-utils/jobs/dessem.sh"
 
     @classmethod
     async def __list_program(
